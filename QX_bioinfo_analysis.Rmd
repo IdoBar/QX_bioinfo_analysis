@@ -1,0 +1,1190 @@
+---
+title: "Genome and Transcriptome analyses of _Marteilia sydneyi_"
+author: "Niki Nenadic and Ido Bar"
+date: "04 July 2023"
+always_allow_html: yes
+output: 
+    bookdown::html_document2:
+      df_print: paged
+      theme: united
+      highlight: pygments
+      css: "style/style.css"
+      toc: true
+      toc_float: true
+      toc_depth: 3
+  #    highlight: pygments
+      number_sections: false
+      code_folding: hide
+#      keep_md: true
+bibliography: style/QX_references.bib
+csl: style/springer-basic-improved-author-date-with-italic-et-al-period.csl
+---
+
+```{r setup, include=FALSE}
+devtools::source_gist("7f63547158ecdbacf31b54a58af0d1cc", filename = "util.R")
+knitr::opts_chunk$set(list(echo = TRUE, eval=FALSE, message=FALSE))
+fav_packages <- c('tidyverse', 'rentrez', 'taxonomizr')
+# pak::pak(fav_packages)
+pacman::p_load(char = basename(fav_packages))
+```
+
+# Experimental Design
+
+## Aims
+
+-   Genomic and transcriptomic characterisation of _Marteilia sydneyi_
+-   Identify genes that play a role in the defence response of Sydney Rock Oysters (_Saccostrea glomerata_) during infection of _Marteilia sydneyi_ (QX disease)  
+
+### Objectives
+
+1. Assemble the _Marteilia sydneyi_ transcriptome
+2. Identify differential gene expression in infected and non-infected Sydney Rock Oysters (_Saccostrea glomerata_)
+3. Assemble the _Marteilia sydneyi_ genome
+
+# Transcriptome assembly of _M. sydneyi_ and _Saccostrea glomerata_
+
+## Analysis Pipeline
+
+### General overview:
+
+1.  Data pre-processing:
+    a.  Quality check
+    b.  Adaptor trimming
+    c.  Post-trim quality check
+    d.  Error correction (?)
+    e.  Combine reads from control SRO and QX-infected SRO
+2.  Mapping reads to host reference genome
+3.  _De Novo_ transcriptome assembly of the reads  
+4.  Homolgy-based taxonomic classification of transcripts  
+5.  Separation of host, _M. sydneyi_ and off-target (various contaminations) transcripts
+6.  Annotation of host pathogen transcripts
+7.  Host transcriptome differential expression
+8.  Summary statistics and visualisation
+
+### Methods
+#### RNA extraction
+RNA was extracted from the digestive gland of 3 healthy Sydney Rock Oysters (SRO, _Saccostrea glomerata_) and 3 SRO infected with QX disease (as confirmed by PCR assay on DNA extracted from each tissue) using the XXX method. The RNA was sent for Illumina paired-end sequencing, generating 150bp reads (Macrogen, Korea). 
+
+The reads were downloaded to the Griffith University High Performance Computing (HPC) cluster (Gowonda) for bioinformatics processing and analyses, following the guidelines by Harward Informatics (see [link](https://github.com/harvardinformatics/TranscriptomeAssemblyTools)) [@freedmanErrorNoiseBias2021]. 
+These included error-correction with Rcorrect v1.5.0 [@songRcorrectorEfficientAccurate2015a] of the reads from each set (healthy SRO and QX-infected SRO) and removal of "unfixable" reads.
+
+```{bash prep-rnaseq-reads}
+# setup environment
+CONDA_NAME="genomics"
+mamba install -n $CONDA_NAME rcorrector agat # can be in the base environment
+cd $HOME/etc/tools/Trinity # ~/aDNA/tools 
+# install additional utilities
+git clone https://github.com/harvardinformatics/TranscriptomeAssemblyTools.git
+WORKDIR=/scratch/aDNA/niki_qx
+mkdir -p $WORKDIR
+cd $WORKDIR
+# Prepare a general array PBS script
+echo '#!/bin/bash 
+#PBS -V
+
+cd $WORKDIR
+>&2 echo Current working directory: $PWD
+source ~/.bashrc
+conda activate $CONDA_NAME 
+set -Eeo pipefail'"
+gawk -v ARRAY_IND=\$PBS_ARRAY_INDEX 'NR==ARRAY_IND' \$CMDS_FILE | bash" > ${WORKDIR}/array.pbspro
+# download reads
+rclone copy -P GU_owncloud:Shared/Oyster_QX_Disease/QX_RNA-Seq ./QX_RNA-Seq
+cd QX_RNA-Seq/data && mkdir corrected_reads
+
+# prepare commands to run Rcorrector for each sample in parallel
+# ls -1 NN01-5*_1.fastq.gz | parallel -k --dry-run --rpl "{infile2} s:_1:_2:;" "run_rcorrector.pl -1 {} -2 {infile2} -verbose -t \$NCPUS -od corrected_reads"  > rcorrector.cmds
+# submit the jobs
+# qsub -J1-$(cat rcorrector.cmds | wc -l) -l select=1:ncpus=8:mem=16GB,walltime=10:00:00 -N rcorr_batch -v "CMDS_FILE=rcorrector.cmds","WORKDIR=$PWD","CONDA_NAME=$CONDA_NAME" ${WORKDIR}/array.pbspro
+# restart failed jobs at stage 3
+# ls -1 NN01-5*_1.fastq.gz | parallel -k --dry-run --rpl "{infile2} s:_1:_2:;" "run_rcorrector.pl -1 {} -2 {infile2} -t \$NCPUS -od corrected_reads -stage 3" > rcorrector_s3.cmds
+# submit the jobs
+# qsub -J1-$(cat rcorrector_s3.cmds | wc -l) -l select=1:ncpus=8:mem=24GB,walltime=10:00:00 -N rcorr_batch_s3 -v "CMDS_FILE=rcorrector_s3.cmds","WORKDIR=$PWD","CONDA_NAME=$CONDA_NAME" ${WORKDIR}/array.pbspro
+# didn't work for NN-567 for some reason
+# restart job for NN-567 from stage 1
+# echo "source ~/.bashrc; conda activate $CONDA_NAME; cd $PWD; set -Eeo pipefail; run_rcorrector.pl -1 NN01-567_1.fastq.gz -2 NN01-567_2.fastq.gz -verbose -t \$NCPUS -od corrected_reads" | qsub -l select=1:ncpus=12:mem=48gb,walltime=20:00:00 -N rcorrect_567 -q bigmem
+
+# Run Rcorrect on Control samples
+mkdir corrected_reads
+R1_FILES_CON=$(seq 1 3 | parallel -k echo "NN01-56{}_1.fastq.gz" | gawk -vORS="," '1' | sed 's/,$//')
+R2_FILES_CON=$(seq 1 3 | parallel -k echo "NN01-56{}_2.fastq.gz" | gawk -vORS="," '1' | sed 's/,$//')
+# submit job
+echo "source ~/.bashrc; conda activate $CONDA_NAME; cd $PWD; set -Eeo pipefail; run_rcorrector.pl -1 $R1_FILES_CON -2 $R2_FILES_CON -t \$NCPUS -od corrected_reads" | qsub -l select=1:ncpus=12:mem=48gb,walltime=50:00:00 -N rcorr_sro_control -q bigmem  
+
+# combine and correct QX-infected samples
+R1_FILES_QX=$(printf "67\n79\n80\n" | parallel -k echo "NN01-5{}_1.fastq.gz" | gawk -vORS="," '1' | sed 's/,$//')
+R2_FILES_QX=$(printf "67\n79\n80\n" | parallel -k echo "NN01-5{}_2.fastq.gz" | gawk -vORS="," '1' | sed 's/,$//')
+# submit job
+echo "source ~/.bashrc; conda activate $CONDA_NAME; cd $PWD; set -Eeo pipefail; run_rcorrector.pl -1 $R1_FILES_QX -2 $R2_FILES_QX -t \$NCPUS -od corrected_reads" | qsub -l select=1:ncpus=12:mem=48gb,walltime=50:00:00 -N rcorr_sro_qx -q bigmem 
+
+# combine reads from individually-corrected samples
+cd corrected_reads
+echo "source ~/.bashrc; cd $PWD; set -Eeo pipefail; seq 1 3 | parallel -k -j4 cat NN01-56{}_1.cor.fq.gz > SRO_control_R1.cor.fastq.gz ; seq 1 3 | parallel -k -j4 cat NN01-56{}_2.cor.fq.gz > SRO_control_R2.cor.fastq.gz ; "'printf "67\n79\n80\n" | parallel -k -j4 cat NN01-5{}_1.cor.fq.gz > SRO_QX_R1.cor.fastq.gz ; printf "67\n79\n80\n" | parallel -k -j4 cat NN01-5{}_2.cor.fq.gz > SRO_QX_R2.cor.fastq.gz' | qsub -l select=1:ncpus=8:mem=24gb,walltime=3:00:00 -N combine_corr_reads 
+
+# remove unfixable reads
+# SRO control
+echo "source ~/.bashrc; cd $PWD; set -Eeo pipefail; python  ~/etc/tools/Trinity/TranscriptomeAssemblyTools/utilities/FilterUncorrectabledPEfastq.py -1 SRO_control_R1.cor.fastq.gz -2 SRO_control_R2.cor.fastq.gz -s SRO_control " | qsub -l select=1:ncpus=8:mem=24gb,walltime=5:00:00 -N rm_unfixable_control
+# SRO-QX
+echo "source ~/.bashrc; cd $PWD; set -Eeo pipefail; python  ~/etc/tools/Trinity/TranscriptomeAssemblyTools/utilities/FilterUncorrectabledPEfastq.py -1 SRO_QX_R1.cor.fastq.gz -2 SRO_QX_R2.cor.fastq.gz -s SRO_QX" | qsub -l select=1:ncpus=8:mem=24gb,walltime=5:00:00 -N rm_unfixable_qx
+
+# compress files with genozip so we could upload them
+ls -1 *.fastq.gz | parallel --dry-run genozip -@ \$NCPUS -f {} > genozip_files.cmds
+# submit the jobs
+qsub -J1-$(cat genozip_files.cmds | wc -l) -l select=1:ncpus=8:mem=16GB,walltime=4:00:00 -N genozip_fastq -v "CMDS_FILE=genozip_files.cmds","WORKDIR=$PWD","CONDA_NAME=base" ${WORKDIR}/array.pbspro
+
+# upload files to Research Space
+rclone copy -P $WORKDIR/QX_RNA-Seq/data GU_owncloud:Shared/Oyster_QX_Disease/QX_RNA-Seq/data
+```
+
+
+```{bash rcorrect-bunya}
+WORKDIR=/scratch/project/adna/
+mkdir -p $WORKDIR/QX_RNA-Seq/data/combined_reads
+cd $WORKDIR/QX_RNA-Seq/data
+# prepare slurm script
+echo '#!/bin/bash --login
+#SBATCH --job-name=QX-combine-reads
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --output=%x.%j.log
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=16G
+#SBATCH --time=4:00:00
+#SBATCH --account=a_agri_genomics
+#SBATCH --partition=general
+
+source ~/.bashrc
+set -Eeo pipefail
+cd $SLURM_SUBMIT_DIR
+srun seq 1 3 | parallel -k cat NN01-56{}_1.fastq.gz > combined_reads/SRO_control_R1.fastq.gz; \
+seq 1 3 | parallel -k cat NN01-56{}_2.fastq.gz > combined_reads/SRO_control_R2.fastq.gz; \
+printf "67\n79\n80\n" | parallel -k cat NN01-5{}_1.fastq.gz > combined_reads/SRO_QX_R1.fastq.gz; \
+printf "67\n79\n80\n" | parallel -k cat NN01-5{}_2.fastq.gz > combined_reads/SRO_QX_R2.fastq.gz' > combine_reads.slurm
+# submit the job 
+sbatch combine_reads.slurm
+
+echo '#!/bin/bash --login
+#SBATCH --job-name=QX-combine-rcorrect
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --output=%x.%j.log
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=16G
+#SBATCH --time=4:00:00
+#SBATCH --account=a_agri_genomics
+#SBATCH --partition=general
+
+source ~/.bashrc
+set -Eeo pipefail
+cd $SLURM_SUBMIT_DIR
+srun seq 1 3 | parallel -k cat NN01-56{}_1.cor.fq.gz > SRO_control_R1.cor.fastq.gz; \
+seq 1 3 | parallel -k cat NN01-56{}_2.cor.fq.gz > SRO_control_R2.cor.fastq.gz; \
+printf "67\n79\n80\n" | parallel -k cat NN01-5{}_1.cor.fq.gz > SRO_QX_R1.cor.fastq.gz; \
+printf "67\n79\n80\n" | parallel -k cat NN01-5{}_2.cor.fq.gz > SRO_QX_R2.cor.fastq.gz' > combine_cor_reads.slurm
+# submit the job 
+sbatch combine_cor_reads.slurm
+
+# remove unfixable reads
+# SRO control
+echo '#!/bin/bash --login
+#SBATCH --job-name=rm_unfixable_control
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --output=%x.%j.log
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=24G
+#SBATCH --time=6:00:00
+#SBATCH --account=a_agri_genomics
+#SBATCH --partition=general
+
+source ~/.bashrc
+set -Eeo pipefail
+cd $SLURM_SUBMIT_DIR
+srun python  ~/etc/tools/TranscriptomeAssemblyTools/utilities/FilterUncorrectabledPEfastq.py -1 SRO_control_R1.cor.fastq.gz -2 SRO_control_R2.cor.fastq.gz -s SRO_control ' > rm_unfixable_control.slurm
+# submit the job 
+sbatch rm_unfixable_control.slurm
+
+# SRO-QX
+echo '#!/bin/bash --login
+#SBATCH --job-name=rm_unfixable_qx
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --output=%x.%j.log
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=24G
+#SBATCH --time=6:00:00
+#SBATCH --account=a_agri_genomics
+#SBATCH --partition=general
+
+source ~/.bashrc
+set -Eeo pipefail
+cd $SLURM_SUBMIT_DIR
+srun python  ~/etc/tools/TranscriptomeAssemblyTools/utilities/FilterUncorrectabledPEfastq.py -1 SRO_QX_R1.cor.fastq.gz -2 SRO_QX_R2.cor.fastq.gz -s SRO_QX' > rm_unfixable_qx.slurm
+# submit the job 
+sbatch rm_unfixable_qx.slurm
+
+```
+
+#### Transcriptome assembly and Annotation with TransPi
+A _De-Novo_ transcriptome was assembled from the combined error-corrected reads using [TransPi](https://palmuc.github.io/TransPi) [@rivera-vicensTransPiComprehensiveTRanscriptome2022]. In brief, TransPi provies a complete transcriptome assembly, basic annotation and assessment pipeline using well-established methods:  
+
+ * Trimming of low-quality bases and removal of sequencing adaptors with Fastp [@chen2018]  
+ * Ribosomal RNA (rRNA) removal matching against the [SILVA rRNA database](https://www.arb-silva.de/) [@quastSILVARibosomalRNA2012]  
+ * Transcriptome assembly using a range of tools, including Trinity, SPAdes, Trans-ABySS and SOAPdenovo-Trans, with a range of k-mers (see a comprehensive comparison of these tools at @holzerNovoTranscriptomeAssembly2019 and of k-mer selection at @haznedarogluOptimizationNovoTranscriptome2012)   
+ * Collapsing redundant transcripts with [EvidentialGene](http://arthropods.eugenes.org/EvidentialGene/)  
+ * Annotation of the assemblies against UniProt databases  
+ * Building a [Trinotate](https://github.com/Trinotate/Trinotate/wiki) database for each assembly and its annotation  
+ 
+TransPi needs to be installed and configured (download annotation databases and set their paths in a `nextflow.config` file). Unfortunately, a lot of the configuration for TransPi to work on GU Gowonda needs to be done manually, including downloading the Singularity containers and setting up the resources required for each process - see the current configuration and the following reported issues:  
+
+1. Missing BUSCO container in the configuration - [Issue #53](https://github.com/PalMuc/TransPi/issues/53#issuecomment-1268051333)  
+2. The precheck script fails to download the UniProt database due to change in the API - see [Issue #52](https://github.com/PalMuc/TransPi/issues/52)  
+3. Use the single TransPiContainer profile to fix issues with some of the tools (see the [documentation](https://palmuc.github.io/TransPi/#_containers))  
+4. Trinity and Velvet-Oases jobs are failing though they seem to complete without a problem (no output files are copied across from the compute nodes). It can be one of these possibilities:  
+    a. Maybe I simply ran out of space (in `/scratch/project/adna`), I've requested additional storage on the `adna` folder on Bunya (now I have 5TB there)  
+    b. It may be related to the use of `$TMPDIR` on the compute nodes (change the flag `scracth=true` into `scratch='/scratch/project/adna/tmp'` in `~/.nextflow/bunya.config`)  
+    c. `$SINGULARITY_TMPDIR` that is running out of space or not properly configured, see this [thread on GitHub](https://github.com/nextflow-io/nextflow/issues/2786#issuecomment-1173975771)  
+    d. Another option is that Bunya is using Apptainer and not Singularity, so maybe I need to configure a profile to use Apptainer instead (v22.11.1).  
+    e. Found the problem!!! It appears that the way TransPi is writing the version numbers throws an error (when `$v` is defined multiple times). I fixed it by using `printf` statement instead of the multiple `echo` ones. 
+    f. Some processes (such as `summary_custom_uniprot`) fail due to `set -o pipefail` directive (complex pipelines, including `grep`, etc.). It can be fixed by adding `set +o pipefail` to the top of the script.  
+5. `Rnammer` fails - it needs to be setup to use `hmmsearch2` (which can be downloaded from [this link](http://eddylab.org/software/hmmer/hmmer-2.3.2.tar.gz) and remove the `--cpu 1` flag from `core-rnammer`, see details [here](https://groups.google.com/g/trinityrnaseq-users/c/WZjkGSMUT3I))  
+6. `rnaQUAST` fails -- it requires an additional tool (GeneMark S-T) to be installed separately and put in the container's `$PATH` (add `export PATH=\$PATH:\$HOME/etc/tools/Annotation/GeneMarkST/` at the top of the script of the rnaquast process in the main nextflow). See details [here](https://github.com/ablab/rnaquast/issues/5#issuecomment-823996456).  
+7. `signalp` fails -- need to edit the executable to allow it to find where it is being run from and increase the sequence limit (see [here](https://www.seqanswers.com/forum/bioinformatics/bioinformatics-aa/29132-how-to-increase-sequence-limit-in-signalp#post236326)) with the following command:  
+`sed -ri.bak 's|SIGNALP} = '\''.+|SIGNALP} = "\$FindBin::RealBin"|; s/BEGIN/use FindBin\;
+\nBEGIN/; s/MAX_ALLOWED_ENTRIES=.+/MAX_ALLOWED_ENTRIES=2000000;/' signalp`
+8. Process `summary_custom_uniprot` fails because of weird table merging and file redundancies done in bash. I edited `Tranbspi/bin/custom_uniprot_hits.R` to perform these tasks and export the `csv` file with the results.  
+
+```{bash setup-transpi}
+# install TransPi
+cd /home/ibar/adna/tools #Bunya
+git clone https://github.com/idobar/TransPi.git # my version
+bash ./TransPi/precheck_TransPi.sh $PWD/TransPi
+sed -i "s/'singularity' || workflow.containerEngine == 'docker'/'singularity' || workflow.containerEngine == 'docker' || workflow.containerEngine == 'apptainer'/g" $PWD/TransPi/TransPi.nf # add support for Apptainer (it will also require NXF_VER=22.11.1-edge)  
+# download the pipeline containers
+grep "singularity_pull_docker_container" $PWD/TransPi/TransPi.nf | cut -f 2 -d '"' | sort | uniq | tr -d \' | parallel --dry-run --rpl  "{outfile} s=https://==; s=[:/]+=-=g;" aria2c -c {} -o $NXF_SINGULARITY_CACHEDIR/{outfile}.img 
+
+# Install GeneMark
+mkdir -p ~/etc/tools/Annotation/GeneMarkST
+cd  !$
+aria2c -x5 http://topaz.gatech.edu/GeneMark/tmp/GMtool_ZozF5/gmst_linux_64.tar.gz
+tar xzf gmst_linux_64.tar.gz
+ln -s $PWD/gmst.pl ~/bin/ # add it to the PATH
+# need to apply for a licence at http://topaz.gatech.edu/GeneMark/license_download.cgi
+aria2c http://topaz.gatech.edu/GeneMark/tmp/GMtool_ZozF5/gm_key_64.gz
+
+# fix Rnammer
+sed -i.bak 's/--cpu 1 //g' /home/ibar/scratch/tools/rnammer-1.2/core-rnammer
+# fix signalp
+sed -ri.bak 's|SIGNALP} = '\''.+|SIGNALP} = "\$FindBin::RealBin"|; s/BEGIN/use FindBin\;
+\nBEGIN/; s/MAX_ALLOWED_ENTRIES=.+/MAX_ALLOWED_ENTRIES=2000000;/' /home/ibar/scratch/tools/signalp-4.1/signalp
+
+cd ~/bin
+aria2c -x5 https://github.com/nextflow-io/nextflow/releases/download/v21.10.4/nextflow-21.10.4-all # this is the original version in TransPi installer - it does not support Apptainer!
+chmod +x nextflow-21.10.4-all
+aria2c -x5 https://github.com/nextflow-io/nextflow/releases/download/v22.11.1-edge/nextflow-22.11.1-edge-all
+chmod +x nextflow-22.11.1-edge-all # this is the only version that supports DSL1, Apptainer and has an update Tower plugin!
+```
+
+##### Test TransPi on subset of reads from one sample
+
+```{bash transpi-test}
+# install bbtools
+mamba install -n gwas bbtools
+mkdir -p ~/adna/sandbox/TransPi_test
+cd !$
+
+echo '#!/bin/bash --login
+#SBATCH --job-name=downsample_reads
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --output=%x.%j.log
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=24G
+#SBATCH --time=6:00:00
+#SBATCH --account=a_agri_genomics
+#SBATCH --partition=general
+
+source ~/.bashrc
+conda activate gwas
+set -Eeo pipefail
+cd $SLURM_SUBMIT_DIR
+srun reformat.sh  in=~/adna/Oyster_QX_Disease/QX_RNA-Seq/data/NN01-561_#.fastq.gz out=NN01-561_#.downsampled.fastq.gz samplerate=0.2' > downsample_reads.slurm
+# submit the job 
+sbatch downsample_reads.slurm
+# conda activate nf21 # nextflow version 21.10.6
+nextflow-22.11.1-edge-all run /home/ibar/adna/tools/TransPi/TransPi.nf -with-tower --all -profile apptainer,TransPiContainer,bunya -c /home/ibar/.nextflow/bunya.config --k 25,35 --maxReadLen 150 --pipeInstall /scratch/project/adna/tools/TransPi --allBuscos --buscoDist --reads './NN01-561_[1,2].downsampled.fastq.gz'
+
+```
+ 
+##### Run TransPi on the combined and corrected reads from each experimental group 
+
+```{bash transpi-assemble}
+# WORKDIR=/scratch/s2978925/aDNA/niki_qx #Gowonda
+WORKDIR=/home/ibar/adna/Oyster_QX_Disease # Bunya
+# mamba create -n nf-dsl1 nextflow=22.10.6 # need an older version (<22) to avoid Apptainer warnings
+# export NXF_DEFAULT_DSL=1 # only needed if using nextflow version>22.03.0-edge and <22.12.0-edge
+# NXF_VER=22.11.1-edge
+
+# export TOWER_ACCESS_TOKEN=eyJ0aWQiOiA0NDYxfS5hNzkzY2M3NTI1YjZkZGFlMjVlZjJiZmIxNTU1MDAyMGE4YjNjZWQ0 # only needed if it is not already set in ~/.bashrc
+# export NXF_VER=22.04.5
+# prepare the folder and input files
+mkdir -p $WORKDIR/SRO_TransPi_assembly/input_files && cd $WORKDIR/SRO_TransPi_assembly
+ln -s $WORKDIR//QX_RNA-Seq/data/corrected_reads/unfixrm_SRO_*.gz input_files/
+ln -s $WORKDIR//QX_RNA-Seq/data/combined_reads/*.fastq.gz input_files/
+# start TransPi (Bunya) [optional tools and databases configured in nextflow.config]
+nextflow-22.11.1-edge-all run /home/ibar/adna/tools/TransPi/TransPi.nf -with-tower --all -profile apptainer,TransPiContainer,bunya -c /home/ibar/.nextflow/bunya.config --k 25,35,41,53,65,71,83 --maxReadLen 150 --pipeInstall /scratch/project/adna/tools/TransPi --allBuscos --buscoDist --reads './input_files/*_R[1,2]*.fastq.gz' -resume
+
+# start the run (Gowonda)
+# nextflow run $WORKDIR/TransPi/TransPi.nf -with-tower --all --reads './input_files/*_R[1,2]*.fastq.gz'  -profile singularity,TransPiContainer,gowonda -c $HOME/.nextflow/GU.config --rRNAfilter --rRNAdb $WORKDIR/TransPi/DBs/rrna_db/SILVA_138.1_Small_and_Large_SURef_NR99_tax_silva_trunc.fasta --withSignalP --signalp $HOME/etc/tools/Annotation/signalp-4.1/signalp --withTMHMM --tmhmm $HOME/etc/tools/Annotation/tmhmm-2.0c/bin/tmhmm --withRnammer --rnam $HOME/etc/tools/Annotation/rnammer-1.2/rnammer --k 25,35,41,53,65,71,83 --maxReadLen 150 --pipeInstall $WORKDIR/TransPi --allBuscos --buscoDist -resume
+
+```
+
+##### Run EvidentialGene step of TransPi to collapse redundant transcripts
+```{bash transpi-evigene}
+JOBNAME="onlyEvigene"
+NCORES=4
+MEM=24
+WALLTIME=20:00:00
+mkdir -p $WORKDIR/SRO_TransPi_assembly/Evigene_analysis/
+cd !$
+ls -1 $WORKDIR/SRO_TransPi_assembly/results/assemblies/*SOAP.fa | parallel --dry-run --rpl "{ass} s:.+/(.+).SOAP.fa:\1:" --rpl "{ass_dir} s:.+/(.+).SOAP.fa:$WORKDIR/SRO_TransPi_assembly/Evigene_analysis/\1:" "source ~/.bash_profile; mkdir -p {ass_dir}/onlyEvi && cd {ass_dir}; ln -s $WORKDIR/SRO_TransPi_assembly/results/assemblies/{ass}*[!k0-9].fa {ass_dir}/onlyEvi/; nextflow-22.11.1-edge-all run /home/ibar/adna/tools/TransPi/TransPi.nf -name {ass}_evigene -with-tower --onlyEvi --outdir {ass}_evigene_results -profile apptainer,TransPiContainer,bunya -c /home/ibar/.nextflow/bunya.config" > $JOBNAME.cmds
+
+# submit the job array to the cluster
+sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WALLTIME --export=ALL,PATH=$PATH,CMDS_FILE=$JOBNAME.cmds,CONDA_NAME=base ${WORKDIR}/array.slurm
+
+# resume (if failed)
+ls -1 $WORKDIR/SRO_TransPi_assembly/results/assemblies/*SOAP.fa | parallel --dry-run --rpl "{ass} s:.+/(.+).SOAP.fa:\1:" "source ~/.bash_profile; cd $WORKDIR/SRO_TransPi_assembly/Evigene_analysis/{ass};  nextflow-22.11.1-edge-all run /home/ibar/adna/tools/TransPi/TransPi.nf -name {ass}_evigene -with-tower --onlyEvi --outdir {ass}_evigene_results -profile apptainer,TransPiContainer,bunya -c /home/ibar/.nextflow/bunya.config -resume" > $JOBNAME.resume.cmds
+# submit the job array to the cluster
+sbatch -a 1-$(cat $JOBNAME.resume.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOBNAME.resume.cmds,CONDA_NAME=base ${WORKDIR}/array.slurm
+
+# Create 
+
+```
+
+##### Annotate chosen assemblies
+
+The assemblies were annotated with TransPi, using homolgy searches (Blast and Diamond) against the Uniprot_Sprot protein database, as well as using HMM search against the PFam database of protein families. In addition, signal peptides, ribosomal genes and transmembrane topology were predicted with SignalP, Rnammer and TMHMM, repectively.
+
+```{bash transpi-annot}
+WORKDIR=/home/ibar/adna/Oyster_QX_Disease # Bunya
+mkdir -p $WORKDIR/SRO_TransPi_assembly/Annotation/OnlyAnn
+ln -s $WORKDIR/SRO_TransPi_assembly/results/assemblies/*Trinity.fa $WORKDIR/SRO_TransPi_assembly/Annotation/OnlyAnn/
+cd $WORKDIR/SRO_TransPi_assembly/Annotation
+
+nextflow-22.11.1-edge-all run /scratch/project/adna/tools/TransPi/TransPi.nf -with-tower --onlyAnn --outdir Annotation_results -profile apptainer,TransPiContainer,bunya -c /home/ibar/.nextflow/bunya.config --withSignalP --withTMHMM --withRnammer
+
+# create gff and gtf files from selected assemblies
+JOBNAME="gtf2gff"
+NCORES=4
+MEM=24
+WALLTIME=20:00:00
+cd $WORKDIR/SRO_TransPi_assembly/reslts/assemblies
+
+find $WORKDIR/SRO_TransPi_assembly/results/assemblies -name "*Trinity.fa" | parallel --dry-run "perl ~/etc/tools/trinityrnaseq-v2.11.0/util/misc/cdna_fasta_file_to_transcript_gtf.pl {} > {.}.gtf; agat_convert_sp_gxf2gxf.pl -g {.}.gtf -o {.}.gff" > $JOBNAME.cmds
+
+# submit the job array to the cluster
+sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WALLTIME --export=ALL,PATH=$PATH,CMDS_FILE=$JOBNAME.cmds,CONDA_NAME=genomics ${WORKDIR}/array.slurm 
+
+rclone copy -P --dry-run --include "*Trinity*" $WORKDIR/SRO_TransPi_assembly/results/assemblies GURS_shared:Oyster_QX_Disease/QX_RNA-Seq/SRO_TransPi_assembly/results/assemblies
+```
+
+In addition to the annotation performed with TransPi, the transcriptomes were annotated against the non-redundant nucleotide and protein databases of the NCBI to achieve more accurate species-specific annotations.
+
+```{bash trans-blast}
+CONDA_NAME=genomics
+mamba install -n $CONDA_NAME gsutil awscli blast
+# download NCBI databases
+mkdir -p ~/adna/tools/ncbi_db
+cd ~/adna/tools/ncbi_db
+WORKDIR=/scratch/project/adna/Oyster_QX_Disease
+JOBNAME="update_blast_db"
+NCORES=8
+MEM=16
+WALLTIME=20:00:00
+parallel --dry-run "update_blastdb.pl --source ncbi --decompress --force --blastdb_version 5 --num_threads 0 {}" ::: nt nr taxdb > $JOBNAME.cmds
+# or do it manually 
+# curl -s -l ftp://ftp.ncbi.nlm.nih.gov/blast/db/v5/ | grep -E "^nr." | parallel --dry-run aria2c -x5 -c --auto-file-renaming=false https://ftp.ncbi.nlm.nih.gov/blast/db/v5/{} > download_blast_nr.cmds
+
+
+# Prepare a general array Slurm script
+echo '#!/bin/bash --login
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --output=%x.%A.%a.log'"
+#SBATCH --account=a_agri_genomics
+#SBATCH --partition=general
+
+set -Eeo pipefail
+source ~/.bashrc
+conda activate \$CONDA_NAME
+cd \$SLURM_SUBMIT_DIR
+srun gawk -v ARRAY_IND=\$SLURM_ARRAY_TASK_ID 'NR==ARRAY_IND' \$CMDS_FILE | bash" > ${WORKDIR}/array.slurm
+
+
+# send to the cluster
+sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOBNAME.cmds,CONDA_NAME=$CONDA_NAME   ${WORKDIR}/array.slurm 
+
+# Blastn - this takes too long, see using blast-nf below
+WORKDIR=/home/ibar/adna/Oyster_QX_Disease
+cd $WORKDIR/SRO_TransPi_assembly/Annotation
+mkdir -p $WORKDIR/SRO_TransPi_assembly/Annotation/Annotation_results/blastn_tax
+JOBNAME="SRO_trans_blastn"
+NCORES=24
+MEM=96
+WALLTIME=150:00:00
+ls -1 $WORKDIR/SRO_TransPi_assembly/results/assemblies/*Trinity.fa | parallel --dry-run "blastn -task blastn -db /scratch/project/adna/tools/ncbi_db/nt -query {} -outfmt '6 std stitle staxids ssciname scomname' -evalue 1e-10 -max_target_seqs 20 -num_threads \$SLURM_CPUS_PER_TASK -out Annotation_results/blastn_tax/{/.}.nt_tax.outfmt6" > $JOBNAME.cmds
+
+# submit the commands in the login node
+bash $JOBNAME.cmds
+# or send to the cluster as a job array
+sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOBNAME.cmds,CONDA_NAME=$CONDA_NAME --dependency=afterok:8070286  ${WORKDIR}/array.slurm 
+
+# annotate proteins - this takes too long, see using blast-nf below
+JOBNAME="SRO_trans_blastp"
+ls -1 $WORKDIR/SRO_TransPi_assembly/Annotation/Annotation_results/transdecoder/*.transdecoder.pep | parallel --dry-run "blastp -task blastp -db /scratch/project/adna/tools/ncbi_db/nr -query {} -outfmt '6 std stitle staxids ssciname scomname' -evalue 1e-10 -max_target_seqs 20 -num_threads \$SLURM_CPUS_PER_TASK -out Annotation_results/blastp_tax/{/.}.nr_tax.outfmt6" > $JOBNAME.cmds
+
+# submit the job array to the cluster
+sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOBNAME.cmds,CONDA_NAME=$CONDA_NAME --dependency=afterok:8070286  ${WORKDIR}/array.slurm
+
+```
+
+```{bash blast-nf}
+WORKDIR=/home/ibar/adna/Oyster_QX_Disease
+cd $WORKDIR/SRO_TransPi_assembly/Annotation
+JOBNAME=blastn_tax_nf
+mkdir -p $WORKDIR/SRO_TransPi_assembly/Annotation/Annotation_results/$JOBNAME
+ls -1 $WORKDIR/SRO_TransPi_assembly/results/assemblies/*Trinity.fa | parallel --dry-run --rpl "{sample} s:.+/(.+)\.Trinity.+:\1:" "~/bin/nextflow-22.11.1-edge-all run ~/etc/tools/blast-nf/main.nf --app blastn --dbDir /scratch/project/adna/tools/ncbi_db --dbName nt --query {} --outfmt \"'6 std stitle staxids ssciname scomname'\" --options '-evalue 1e-10 -max_target_seqs 20' --chunkSize 5000 --outdir  $WORKDIR/SRO_TransPi_assembly/Annotation/Annotation_results/$JOBNAME/{sample} --outfileName {/.}.nt_tax.outfmt6  -c ~/.nextflow/bunya.config -profile bunya,apptainer -with-tower" > $JOBNAME.cmds
+
+# submit the job array to the cluster
+sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOBNAME.cmds,CONDA_NAME=base ${WORKDIR}/array.slurm
+
+JOBNAME=blastp_tax_nf
+mkdir -p $WORKDIR/SRO_TransPi_assembly/Annotation/Annotation_results/$JOBNAME
+ls -1 $WORKDIR/SRO_TransPi_assembly/Annotation/Annotation_results/transdecoder/*.transdecoder.pep | parallel --dry-run --rpl "{sample} s:.+/(.+)\.Trinity.+:\1:" "~/bin/nextflow-22.11.1-edge-all run ~/etc/tools/blast-nf/main.nf --app blastp --dbDir /scratch/project/adna/tools/ncbi_db --dbName nr --query {} --outfmt \"'6 std stitle staxids ssciname scomname'\" --options '-evalue 1e-10 -max_target_seqs 20' --chunkSize 2000 --outdir  $WORKDIR/SRO_TransPi_assembly/Annotation/Annotation_results/$JOBNAME/{sample} --outfileName {/}.nr_tax.outfmt6  -c ~/.nextflow/bunya.config -profile bunya,apptainer -with-tower" > $JOBNAME.cmds
+
+# submit the job array to the cluster
+sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOBNAME.cmds,CONDA_NAME=base ${WORKDIR}/array.slurm
+
+```
+
+The predicted proteins in the transcriptomes were further annotated using InterProScan (or [FA-nf](https://github.com/guigolab/FA-nf)) to assign protein families, motifs and ontologies to assist with transcript-to-gene annotation.
+Notice the issues mentioned above with SignalP and TMHMM and a new one for Phobius (see discussions and solutions on [GitHub](https://github.com/nextgenusfs/funannotate/issues/696#issuecomment-1057663190) and [BioStar](https://www.biostars.org/p/238642/))
+
+```{bash prot-annotation}
+cd ~/adna/tools
+start_interactive_job # start an interactive job to download interproscan
+IPSCAN_VERSION=5.66-98.0
+IPRO_DATA=interproscan-data-${IPSCAN_VERSION}.tar.gz
+# http://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/5.66-98.0/alt/interproscan-data-5.66-98.0.tar.gz
+DATA_URL="https://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/${IPSCAN_VERSION}/alt/${IPRO_DATA}"
+aria2c -x 6 -c $DATA_URL && \
+ aria2c -c $DATA_URL.md5 && \
+ md5sum -c ${IPRO_DATA}.md5 && pigz -dc $IPRO_DATA | tar xf -
+# download the interproscan container
+apptainer pull docker://index.docker.io/interpro/interproscan:${IPSCAN_VERSION}
+# create a link in SINGULARITY_CACHEDIR
+ln -s interproscan_${IPSCAN_VERSION}.sif ~/adna/.singularity/cache/
+
+# download the FA-nf pipeline
+git clone --recursive https://github.com/guigolab/FA-nf
+# copy external software and containers from Research Space
+rclone copy -P  GURS_shared:Oyster_QX_Disease/FA-nf/containers FA-nf/containers
+cd FA-nf/containers/interproscan && tar xzf external_tools.tar.gz && cd -
+# ls -1  FA-nf/containers/interproscan/external/tmhmm-2.0c/bin/* | parallel chmod +x {}
+# wget https://github.com/chefnb/ParseTargs/raw/master/tmhmm-2.0c/bin/decodeanhmm -O FA-nf/containers/interproscan/external/phobius/decodeanhmm
+# chmod +x FA-nf/containers/interproscan/external/signalp-4.1/signalp FA-nf/containers/interproscan/external/phobius/decodeanhmm  FA-nf/containers/interproscan/external/phobius/phobius.pl
+
+# copy user-defined settings
+cp -r FA-nf/containers/interproscan/.interproscan-5 ~/
+# edit path to external programs and databases
+# nano ~/.interproscan-5/interproscan.properties
+( echo "data.directory=$PWD/interproscan-${IPSCAN_VERSION}/data"; sed -r  "s|=.+/FA-nf/containers/interproscan/external|=/home/ibar/scratch/tools|g" $PWD/FA-nf/containers/interproscan/.interproscan-5/interproscan.properties ) > ~/.interproscan-5/interproscan.properties
+# sed -i  "s|/home/ibar/etc|$PWD|g" ~/.interproscan-5/interproscan.properties
+# echo "data.directory=$PWD/interproscan-${IPSCAN_VERSION}/data" >> ~/.interproscan-5/interproscan.properties
+# test that interproscan is working
+start_interactive_job # make sure it is run on a compute node
+apptainer exec FA-nf/containers/interproscan/interproscan_${IPSCAN_VERSION}.sif /opt/interproscan/interproscan.sh
+# press the HMM databases 
+
+apptainer exec -B $PWD/interproscan-${IPSCAN_VERSION}/data:/opt/interproscan/data  $PWD/FA-nf/containers/interproscan/interproscan_${IPSCAN_VERSION}.sif /bin/sh -c "cd /opt/interproscan/; python3 setup.py -f interproscan.properties"
+# if the code above isn't working then do it interactively
+apptainer shell -B $PWD/interproscan-${IPSCAN_VERSION}/data:/opt/interproscan/data  $PWD/FA-nf/containers/interproscan/interproscan_${IPSCAN_VERSION}.sif
+cd /opt/interproscan/; python3 setup.py -f interproscan.properties
+
+
+
+# annotate proteins 
+WORKDIR=/home/ibar/adna/Oyster_QX_Disease
+cd $WORKDIR/SRO_TransPi_assembly/Annotation
+mkdir -p $WORKDIR/SRO_TransPi_assembly/Annotation/Annotation_results/ipscan
+JOBNAME="SRO_prot_ipscan"
+# prepare the commands (don't forget to remove the asterisk at the end of the proteins!)
+ls -1 $WORKDIR/SRO_TransPi_assembly/Annotation/Annotation_results/transdecoder/*.transdecoder.pep | parallel --dry-run "sed 's/[*]//g' {} > \$TMPDIR/{/.}.tmp ; apptainer exec -B /home/ibar/scratch/tools -B $WORKDIR/SRO_TransPi_assembly/Annotation/Annotation_results/ipscan:/output -B \$TMPDIR:/temp $NXF_SINGULARITY_CACHEDIR/interproscan_${IPSCAN_VERSION}.sif /opt/interproscan/interproscan.sh -i /temp/{/.}.tmp -d /output -pa -dp -goterms -f TSV -T /temp -cpu \$SLURM_CPUS_PER_TASK " > $JOBNAME.cmds
+
+# submit the job array to the cluster
+sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOBNAME.cmds,CONDA_NAME=$CONDA_NAME  ${WORKDIR}/array.slurm
+
+cd 
+# remove the tmp from the filenames
+$WORKDIR/SRO_TransPi_assembly/Annotation/Annotation_results/ipscan
+rename -v 's/.tmp//' *
+# extract PANTHER results
+ls -1 *.tsv | parallel  "gawk '\$4~/PANTHER/' {} > {.}.panther.tsv"
+# send results back to Research Space
+rclone copy -P $WORKDIR/SRO_TransPi_assembly/Annotation/Annotation_results/ipscan GURS_shared:Oyster_QX_Disease/QX_RNA-Seq/SRO_TransPi_assembly/Annotation_results/ipscan
+
+
+```
+
+
+These annotation tables were added to the Trinotate database of the assemblies.
+
+
+
+##### Assess the quality of assemblies
+The transcriptome assemblies were assessed and compared using [rnaQuast](https://github.com/ablab/rnaquast) v2.2.3 [@bushmanovaRnaQUASTQualityAssessment2016], [TransRate](http://hibberdlab.com/transrate) v1.0.3 [@smith-unnaTransRateReferencefreeQuality2016] and [DETONATE](https://deweylab.biostat.wisc.edu/detonate/) v1.11 [@liEvaluationNovoTranscriptome2014b], as suggested in the Trinity [documentation](https://github.com/trinityrnaseq/trinityrnaseq/wiki/Transcriptome-Assembly-Quality-Assessment) and by @beheraPlantTranscriptomeAssembly2021.
+
+The transcripts were compared to the Pacific Oyster (*Crassostrea gigas*) proteins, which were obtained from NCBI (Accession [GCA_902806645.1](https://www.ncbi.nlm.nih.gov/datasets/genome/GCA_902806645.1/)) [@penalozaChromosomelevelGenomeAssembly2021] 
+
+```{bash eval-assembly}
+CONDA_NAME=rnaseq
+mamba create -n $CONDA_NAME transrate ncbi-datasets-cli detonate
+WORKDIR=/home/ibar/adna/Oyster_QX_Disease
+conda activate $CONDA_NAME
+
+mkdir -p $WORKDIR/references && cd $WORKDIR/references
+datasets download genome accession GCF_902806645.1 --include gff3,rna,cds,protein,genome --filename GCF_902806645.1.zip
+unzip GCF_902806645.1.zip
+REF_PROT=$WORKDIR/references/ncbi_dataset/data/GCF_902806645.1/protein.faa
+# $WORKDIR/SRO_TransPi_assembly/results/assemblies
+# install the ORP version of transrate
+cd ~/etc/tools 
+wget https://github.com/macmanes-lab/Oyster_River_Protocol/raw/master/software/orp-transrate.tar.gz
+tar xzf orp-transrate.tar.gz
+
+# or install the ORP container
+cd $NXF_APPTAINER_CACHEDIR
+apptainer pull docker://macmaneslab/orp:latest
+
+cd $WORKDIR/SRO_TransPi_assembly/
+
+NCORES=24
+MEM=96
+WALLTIME=100:00:00
+
+#mkdir -p $WORKDIR/SRO_TransPi_assembly/results/transrate
+# cp /home/ibar/adna/Oyster_QX_Disease/SRO_TransPi_assembly/work/27/72b07a2131e97971f644da74fc9dc6/unfixrm_SRO_QX_no_rRNA.R1.fq /home/ibar/adna/Oyster_QX_Disease/SRO_TransPi_assembly/work/2b/f20013a2ae897e646817eac5d0997c/SRO_QX_no_rRNA.R1.fq /home/ibar/adna/Oyster_QX_Disease/SRO_TransPi_assembly/work/e5/25ba5d1510380c3631ee6c18bf2e89/SRO_control_no_rRNA.R1.fq /home/ibar/adna/Oyster_QX_Disease/SRO_TransPi_assembly/work/81/5bd2ffe863bf0ee37388694b4ad254/unfixrm_SRO_control_no_rRNA.R1.fq $WORKDIR/SRO_TransPi_assembly/input_files/
+
+# use no_rRNA.R1.fq files as input 
+JOBNAME="transrate_no_rRNA"
+OUTDIR=$WORKDIR/SRO_TransPi_assembly/results/$JOBNAME # or OUTDIR=~/scratch/sandbox/SRO_TransPi_assembly/$JOBNAME
+mkdir -p $OUTDIR
+parallel --dry-run --rpl "{sample} s:.+/(.+)_no_rRNA.R1.fq:\1:" --rpl "{read2} s:.R1:.R2:" "mkdir -p $OUTDIR/{sample}; ASSEMBLIES=\$(ls -1 $WORKDIR/SRO_TransPi_assembly/results/assemblies/{sample}*[!k0-9].fa | gawk -v ORS=\",\" '1' | sed 's/,$//'); $HOME/etc/tools/orp-transrate/transrate --assembly \$ASSEMBLIES --left {} --right {read2} --threads \$SLURM_CPUS_PER_TASK --reference $REF_PROT --output $OUTDIR/{sample}" ::: $(ls -1 $WORKDIR/SRO_TransPi_assembly/input_files/*SRO*no_rRNA.R1.fq) > $JOBNAME.cmds
+# --merge-assemblies {sample}.merged.fa 
+# submit the job array to the cluster
+sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOBNAME.cmds,CONDA_NAME=$CONDA_NAME ${WORKDIR}/array.slurm
+
+# use normalised (.norm.fq) files as input 
+JOBNAME="transrate_norm"
+OUTDIR=$WORKDIR/SRO_TransPi_assembly/results/$JOBNAME # or OUTDIR=$HOME/scratch/sandbox/SRO_TransPi_assembly/$JOBNAME
+mkdir -p $OUTDIR
+parallel --dry-run --rpl "{sample} s:.+/\w+-(.+).norm.fq:\1:" --rpl "{read2} s:left-:right-:" "mkdir -p $OUTDIR/{sample}; ASSEMBLIES=\$(ls -1 $WORKDIR/SRO_TransPi_assembly/results/assemblies/{sample}*[!k0-9].fa | gawk -v ORS=\",\" '1' | sed 's/,$//'); $HOME/etc/tools/orp-transrate/transrate --assembly \$ASSEMBLIES --left {} --right {read2} --threads \$SLURM_CPUS_PER_TASK --reference $REF_PROT --output $OUTDIR/{sample}" ::: $(find $WORKDIR/SRO_TransPi_assembly/work -type f -name left-*SRO*.norm.fq) > $JOBNAME.cmds
+# --merge-assemblies {sample}.merged.fa 
+# submit the job array to the cluster
+sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOBNAME.cmds,CONDA_NAME=$CONDA_NAME ${WORKDIR}/array.slurm
+
+
+```
+
+#### Gene Expression Analysis
+The chosen most representative transcriptome assembly was used as reference to quantify gene/transcript abundance using [Salmon](https://salmon.readthedocs.io/en/latest/salmon.html) [@patroSalmonProvidesFast2017, @loveSwimmingDownstreamStatistical2018] or [Kallisto](https://pachterlab.github.io/kallisto/about) [@brayNearoptimalProbabilisticRNAseq2016]
+
+```{bash salmon-quant}
+CONDA_NAME=genomics
+mamba install -n $CONDA_NAME kallisto salmon 
+WORKDIR=/home/ibar/adna/Oyster_QX_Disease
+mkdir -p $WORKDIR/SRO_TransPi_assembly/Gene_expression
+cd !$
+
+JOBNAME="Salmon_index"
+NCORES=12
+MEM=64
+WALLTIME=10:00:00
+parallel --dry-run "salmon index -t {} -i {/.}.index" ::: $(ls -1 $WORKDIR/SRO_TransPi_assembly/results/assemblies/*Trinity.fa ) > $JOBNAME.cmds 
+
+# submit the job array to the cluster
+sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOBNAME.cmds,CONDA_NAME=$CONDA_NAME ${WORKDIR}/array.slurm
+
+DATE=`date +%d_%m_%Y`
+JOBNAME="Salmon_quant_$DATE"
+RUNDIR=$WORKDIR/SRO_TransPi_assembly/Gene_expression/$JOBNAME
+mkdir -p $RUNDIR && cd $RUNDIR
+parallel --dry-run --rpl "{sample} s:.+/(.+)_1.fastq.gz:\1:" --rpl "{read2} s:_1:_2:" "salmon quant -i $WORKDIR/SRO_TransPi_assembly/Gene_expression/unfixrm_SRO_QX.Trinity.index -l A -1 {} -2 {read2} -o {sample}_salmon_eq --numBootstraps 500 --useVBOpt --seqBias --dumpEq -p \$SLURM_CPUS_PER_TASK --validateMappings" ::: $(ls -1 $WORKDIR/QX_RNA-Seq/data/NN01-5*_1.fastq.gz ) > $JOBNAME.cmds
+
+# submit the job array to the cluster
+sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOBNAME.cmds,CONDA_NAME=$CONDA_NAME ${WORKDIR}/array.slurm
+
+
+```
+
+Expression-based clustering of transcripts was performed with [RapClust](https://github.com/COMBINE-lab/RapClust) [@trapnellDifferentialAnalysisGene2013]. 
+
+```{bash rapclust}
+CONDA_NAME=genomics
+conda activate $CONDA_NAME
+mamba install mcl # need to install mcl
+pip install git+https://github.com/IdoBar/RapClust@patch-1
+# mamba install -n $CONDA_NAME kallisto salmon rapclust
+WORKDIR=/home/ibar/adna/Oyster_QX_Disease
+cd $WORKDIR/SRO_TransPi_assembly/Gene_expression/Salmon_quant_14_06_2024
+
+# unzip the eq_classes files
+find . -name eq_classes.txt.gz | parallel  "gzip -cd {} > {.}"
+
+JOBNAME="SRO_rapclust"
+NCORES=12
+MEM=64
+WALLTIME=10:00:00
+# prepare config file for RapClust
+find . -maxdepth 1 -type d -name  "NN01-*salmon_eq" | sort | gawk -F "/" 'BEGIN{printf "conditions:\n  - SRO_Control\n  - SRO_QX\nsamples:\n  SRO_Control:"}{printf "\n    - %s", $2}NR==3{printf "\n  SRO_QX:"}END{printf "\noutdir: SRO_rapclust\n"}' > $JOBNAME.yaml
+# prepare SLURM script 
+echo "RapClust --config $JOBNAME.yaml" > $JOBNAME.cmds
+# submit the job array to the cluster
+sbatch -a 1 --job-name=$JOBNAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOBNAME.cmds,CONDA_NAME=$CONDA_NAME ${WORKDIR}/array.slurm
+
+```
+
+
+# Genome assembly of _M. sydneyi_
+
+## Analysis Pipeline
+
+### General overview:
+
+1.  Data pre-processing:
+    a.  Reads basecalling
+    b.  Quality check
+    c.  Adaptor trimming
+    d.  Post-trim quality check
+2.  Mapping reads to host reference genome
+3.  _De Novo_ genome assembly of non-host reads
+4.  Taxonomic classification of contigs
+5.  Removal of additional host and off-target contigs
+6.  Annotation of pathogen genes
+7.  Summary statistics and visualisation
+
+### Methods
+
+#### DNA Extraction
+High molecular DNA was extracted using the Monarch® HMW DNA Extraction Kit for Tissue (New England Biolabs, [NEB T3060](https://www.neb.com/en-au/products/t3060-monarch-hmw-dna-extraction-kit-for-tissue#Product%20Information)) from digestive gland tissue of Sydney rock oysters infected with QX disease. The samples were confirmed to be infected with QX (contain _M. sydneyi_) by a PCR assay using the extracted DNA as template, as described by XXX. DNA integrity, purity and quantity were assessed by gel electrophoresis, Nanodrop and Qubit, respectively.    
+
+#### Nanopore Sequencing and Basecalling
+The DNA was prepared for long-read Nanopore sequencing by removal of contaminants (Qiagne [DNeasy PowerClean CleanUp Kit](https://www.qiagen.com/us/products/discovery-and-translational-research/dna-rna-purification/dna-purification/microbial-dna/dneasy-powerclean-cleanup-kit)) and short fragments (ONT Short Fragment Eliminator Kit, EXP-SFE001), followed by ligation of sequencing adapters using the Ligation sequencing DNA V14 (ONT SQK-LSK114) or the Rapid Barcoding kit (SQK-RBK110.96) for sequencing on an Oxford Nanopore Mk1C with a MINFLO114 flowcell (R10) or on a PromethION R9.4.1 flowcell, respectively.   
+PromethION data was first demultiplexed with Guppy, then the resulting `fast5` files were converted to `pod5` files using [pod5 package](https://pod5-file-format.readthedocs.io/en/0.2.0/docs/tools.html).  
+
+```{bash setup-conda}
+# download and install conda/mamba
+wget "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh"
+bash Miniforge3-$(uname)-$(uname -m).sh
+# initialise conda
+source ~/.bashrc
+# add channels and set priorities
+conda config --add channels conda-forge
+conda config --append channels bioconda
+# make sure the base environment is always accessible
+conda config --set auto_stack 1
+# install extra packages to the base environment
+conda install -n base libgcc gnutls libuuid readline cmake git tmux libgfortran parallel mamba gawk pigz rename genozip autoconf sshpass pbgzip rclone gh-cli
+# setup conda environment for Nanopore data analysis and processing
+mamba create -n ont seqkit slow5tools samtools rclone parallel pip numpy pycoqc chopper nanoplot pbgzip
+conda activate ont
+pip install pod5 pyslow5
+```
+
+Basecalling of simplex and duplex reads from the Nanopore sequencing data was performed with [dorado](https://github.com/nanoporetech/dorado).  
+
+The recommended workflow is as follows:  
+
+1. Basecall while aligning to the host reference into `BAM` file (convert `fast5` into `pod5` files if needed)  
+2. Generate summary statistics with `dorado summary` and QC (see [this tutorial](https://timkahlke.github.io/LongRead_tutorials/APP_ANS.html#whats-the-name-of-the-configuration-file-guppy-needs-to-basecall-the-tutorial-data))  
+3. Save unaligned reads to `FASTQ` format (with `samtools view -Ofastq -f 4 file.bam > unmapped_reads.fastq`, see [this SO thread](https://stackoverflow.com/a/63157775), [this thread](https://bioinformatics.stackexchange.com/a/13616) and [this explanation](https://github.com/samtools/samtools/issues/1153))  
+4. Separate duplex reads from simplex to `FASTQ` format (either from the original `BAM` or from the un-mapped `FASTQ`, see [dorado issue #199](https://github.com/nanoporetech/dorado/issues/199#issuecomment-1571617174))  
+5. Adaptor trimming of the reads with `Porechop` and quality trimming with `Nanofilt` (average read quality Q>10, minimum read length >500 and removal of the first 10 bases)   
+
+
+```{bash dorado-setup}
+cd ~/aDNA/tools
+wget https://cdn.oxfordnanoportal.com/software/analysis/dorado-0.3.4-linux-x64.tar.gz
+tar xzfv dorado-0.3.4-linux-x64.tar.gz
+ln -s ~/aDNA/tools/dorado-0.3.4-linux-x64/bin/dorado $CONDA_PREFIX/bin/
+mkdir dorado_models
+cd dorado models
+# manually download and unzip dorado models (see  https://github.com/nanoporetech/dorado/issues/266#issuecomment-1613225513)
+dorado download --list 2>&1 >/dev/null | grep -v "models" | cut -d " " -f6 | parallel --dry-run 'wget https://cdn.oxfordnanoportal.com/software/analysis/dorado/{}.zip && unzip {}.zip'
+
+```
+
+
+
+```{bash dorado-basecall-bam}
+WORK_DIR=$HOME/scratch/McDougall/Niki_QX_genome/Nanopore_sequencing
+
+# Niki_QX_1
+BATCH=Niki_QX_1_SRO_781
+MINQ=7
+MODEL="dna_r10.4.1_e8.2_400bps_sup@v4.2.0"
+cd $WORK_DIR/Niki_QX_1/SRO_781
+mkdir pod5
+# create symlinks to pod5 files
+find $PWD/202* -name *.pod5 | parallel ln -s {} pod5/
+
+echo "source ~/.bashrc; conda activate ont; module load cuda/12.1; cd $PWD; set -Eeo pipefail; dorado duplex --reference $WORK_DIR/Sro_reference_concatenated.fasta -x cuda:0 --min-qscore $MINQ ~/aDNA/tools/dorado_models/${MODEL} pod5/  > ${BATCH}_SRO-mapped_reads_Q${MINQ}.bam; dorado summary -v ${BATCH}_SRO-mapped_reads_Q${MINQ}.bam > ${BATCH}_sequencing_summary.txt ; samtools view -Ofastq -f 4 ${BATCH}_SRO-mapped_reads_Q${MINQ}.bam | pbgzip -c -8 > ${BATCH}_unmapped_reads.fastq.gz; seqkit grep -nri -p  ';' ${BATCH}_unmapped_reads.fastq.gz -o ${BATCH}_duplex_unmapped_reads_Q7.fastq.gz; seqkit grep -nriv -p  ';' ${BATCH}_unmapped_reads.fastq.gz -o ${BATCH}_simplex_unmapped_reads_Q7.fastq.gz" | qsub -l select=1:ncpus=8:ngpus=1:mem=128gb,walltime=20:00:00 -N Niki_QX_1 -q gpuq2 
+
+# fix it for unmapped reads
+ln -s $PWD/Niki_QX_1_SRO_781_reads_Q7.fastq.gz $WORK_DIR/fastq_files/
+
+# Niki_QX_2
+BATCH=Niki_QX_2_SRO_781
+MINQ=7
+MODEL="dna_r10.4.1_e8.2_400bps_sup@v4.2.0"
+cd $WORK_DIR/Niki_QX_2/SRO_781
+mkdir pod5
+# create symlinks to pod5 files
+find $PWD/202* -name *.pod5 | parallel ln -s {} pod5/
+
+echo "source ~/.bashrc; conda activate ont; module load cuda/12.1; cd $PWD; set -Eeo pipefail; ~/aDNA/tools/dorado-0.3.1-linux-x64/bin/dorado duplex --reference $WORK_DIR/Sro_reference_concatenated.fasta -x cuda:0 --min-qscore $MINQ ~/aDNA/tools/dorado-0.3.1-linux-x64/dorado_models/${MODEL} pod5/  > ${BATCH}_SRO-mapped_reads_Q${MINQ}.bam; dorado summary -v ${BATCH}_SRO-mapped_reads_Q${MINQ}.bam > ${BATCH}_sequencing_summary.txt ; samtools view -Ofastq -f 4 ${BATCH}_SRO-mapped_reads_Q${MINQ}.bam | pbgzip -c -8 > ${BATCH}_unmapped_reads.fastq.gz; seqkit grep -nri -p  ';' ${BATCH}_unmapped_reads.fastq.gz -o ${BATCH}_duplex_unmapped_reads_Q7.fastq.gz; seqkit grep -nriv -p  ';' ${BATCH}_unmapped_reads.fastq.gz -o ${BATCH}_simplex_unmapped_reads_Q7.fastq.gz" | qsub -l select=1:ncpus=8:ngpus=1:mem=128gb,walltime=20:00:00 -N Niki_QX_2 -q gpuq2
+
+ln -s $PWD/Niki_QX_2_SRO_781_reads_Q7.fastq.gz $WORK_DIR/fastq_files/
+
+# separate duplex from simplex reads
+seqkit grep -nri -p  ";" Niki_QX_2_raw_reads_Q7.fastq -o Niki_QX_2_duplex_reads_Q7.fastq.gz
+seqkit grep -nriv -p  ";" Niki_QX_2_raw_reads_Q7.fastq -o Niki_QX_2_simplex_reads_Q7.fastq.gz
+# calculate percent of duplex reads
+DUPS=$(zcat Niki_QX_2_duplex_reads_Q7.fastq.gz | gawk 'NR%4==1' | wc -l)
+TOTAL=$(zcat Niki_QX_2_SRO_781_reads_Q7.fastq.gz | gawk 'NR%4==1' | wc -l)
+DUP_RATIO=$(bc <<<"scale=4;$DUPS/$TOTAL")
+
+
+# process the PromethION batch
+BATCH=Niki_QX_SRO_781_Prom1
+PROM_DIR=$HOME/scratch/McDougall/Niki_QX_genome/Nanopore_sequencing/PromethION_QAAFI/20230612_1541_1G_PAG73069_dca304f3
+MODEL="dna_r9.4.1_e8_sup@v3.6"
+mkdir -p $PROM_DIR/fast5_pass
+
+# copy data from Research Space
+rclone copy -P GU_owncloud:Shared/Oyster_QX_Disease/Nanopore_sequencing/A_rabiei_M_sydneyi/20230612_1541_1G_PAG73069_dca304f3/fast5_pass/barcode19 $PROM_DIR/fast5_pass/barcode19
+rclone copy -P GU_owncloud:Shared/Oyster_QX_Disease/Nanopore_sequencing/A_rabiei_M_sydneyi/20230612_1541_1G_PAG73069_dca304f3/fast5_pass/barcode20 $PROM_DIR/fast5_pass/barcode20
+
+cd $PROM_DIR/fast5_pass
+# convert from fast5 to pod5
+pod5 convert fast5 ./barcode19 --output ./barcode19/pod5/Niki_QX_QAAFI_barcode19.pod5
+pod5 convert fast5 ./barcode20 --output ./barcode20/pod5/Niki_QX_QAAFI_barcode20.pod5
+
+
+
+#ls -1 barcode* | parallel --dry-run "module load cuda/12.1; cd $PWD; set -Eeo pipefail; ~/aDNA/tools/dorado-0.3.1-linux-x64/bin/dorado basecaller -r -x cuda:0 --emit-fastq --min-qscore 9 ~/aDNA/tools/dorado-0.3.1-linux-x64/dorado_models/dna_r9.4.1_e8_sup@v3.6 {} > Niki_QX_QAAFI_{}_raw_reads_Q9.fastq" | qsub -l select=1:ncpus=4:ngpus=1:mem=16gb,walltime=20:00:00 -N Niki_QX_QAAFI -q gpuq2
+
+# create symlinks to pod5 files
+# find $PWD/202* -name *.pod5 | parallel ln -s {} pod5/
+
+echo "source ~/.bashrc; conda activate ont; module load cuda/12.1; cd $PWD; set -Eeo pipefail; ~/aDNA/tools/dorado-0.3.1-linux-x64/bin/dorado basecaller --reference $WORK_DIR/Sro_reference_concatenated.fasta -x cuda:0 --min-qscore $MINQ ~/aDNA/tools/dorado-0.3.1-linux-x64/dorado_models/$MODEL barcode20/pod5/  > ${BATCH}_SRO-mapped_reads_Q${MINQ}.bam; dorado summary -v ${BATCH}_SRO-mapped_reads_Q${MINQ}.bam > ${BATCH}_sequencing_summary.txt ; samtools view -Ofastq -f 4 ${BATCH}_SRO-mapped_reads_Q${MINQ}.bam | pbgzip -c -8 > ${BATCH}_unmapped_reads.fastq.gz" | qsub -l select=1:ncpus=8:ngpus=1:mem=128gb,walltime=20:00:00 -N Niki_QX_Prom1 -q gpuq2
+
+ln -s $PWD/Niki_QX_2_SRO_781_reads_Q7.fastq.gz $WORK_DIR/fastq_files/
+
+
+# copy the files to Research Space
+rclone copy -P -L  $WORK_DIR/fastq_files GU_owncloud:Shared/Oyster_QX_Disease/Nanopore_sequencing/fastq_files
+
+```
+
+<!-- ```{bash dorado-basecall-fastq} -->
+
+
+<!-- # run interactively (Niki_QX_1): -->
+<!-- qsub -I -l select=1:ncpus=4:ngpus=1:mem=12gb,walltime=10:00:00 -q gpuq2 -N ONT-dorado -->
+
+<!-- module load cuda/12.1 -->
+<!-- # export LD_LIBRARY_PATH=/scratch/aDNA/tools/dorado-0.3.1-linux-x64/lib:$LD_LIBRARY_PATH -->
+
+<!-- cd ~/scratch/McDougall/Niki_QX_genome/Nanopore_sequencing/Niki_QX_1/SRO_781/20230619_1431_MC-114875_FAW74280_8dcf3c8a/ -->
+
+<!-- # run basecalling in Duplex mode -->
+<!-- ~/aDNA/tools/dorado-0.3.1-linux-x64/bin/dorado duplex -x cuda:0 --emit-fastq --min-qscore 9 ~/aDNA/tools/dorado-0.3.1-linux-x64/dorado_models/dna_r10.4.1_e8.2_400bps_sup@v4.2.0 pod5/ > Niki_QX_1_raw_reads_Q9.fastq -->
+
+<!-- # or submit to the cluster (Niki_QX_2) -->
+
+<!-- cd ~/scratch/McDougall/Niki_QX_genome/Nanopore_sequencing/Niki_QX_2/SRO_781 -->
+<!-- mkdir pod5 -->
+<!-- # create symlinks to pod5 files -->
+<!-- find $PWD/202* -name *.pod5 | parallel ln -s {} pod5/ -->
+
+<!-- echo "source ~/.bashrc; conda activate ont; module load cuda/12.1; cd $PWD; set -Eeo pipefail; ~/aDNA/tools/dorado-0.3.1-linux-x64/bin/dorado duplex -r -x cuda:0 --emit-fastq --min-qscore 7 ~/aDNA/tools/dorado-0.3.1-linux-x64/dorado_models/dna_r10.4.1_e8.2_400bps_sup@v4.2.0 pod5/ | pbgzip -6 -c > Niki_QX_2_raw_reads_Q7.fastq.gz; seqkit grep -nri -p  ';' Niki_QX_2_raw_reads_Q7.fastq.gz -o Niki_QX_2_duplex_reads_Q7.fastq.gz; seqkit grep -nriv -p  ';' Niki_QX_2_raw_reads_Q7.fastq.gz -o Niki_QX_2_simplex_reads_Q7.fastq.gz" | qsub -l select=1:ncpus=4:ngpus=1:mem=16gb,walltime=20:00:00 -N Niki_QX_2 -q gpuq2 -->
+
+<!-- # separate duplex from simplex reads -->
+<!-- seqkit grep -nri -p  ";" Niki_QX_2_raw_reads_Q7.fastq -o Niki_QX_2_duplex_reads_Q7.fastq.gz -->
+<!-- seqkit grep -nriv -p  ";" Niki_QX_2_raw_reads_Q7.fastq -o Niki_QX_2_simplex_reads_Q7.fastq.gz -->
+<!-- # calculate percent of duplex reads -->
+<!-- DUPS=$(zcat Niki_QX_2_duplex_reads_Q7.fastq.gz | gawk 'NR%4==1' | wc -l) -->
+<!-- TOTAL=$(gawk 'NR%4==1' Niki_QX_2_raw_reads_Q7.fastq | wc -l ) -->
+<!-- DUP_RATIO=$(bc <<<"scale=4;$DUPS/$TOTAL") -->
+
+<!-- # process the PromethION batch -->
+<!-- PROM_DIR=$HOME/scratch/McDougall/Niki_QX_genome/Nanopore_sequencing/PromethION_QAAFI/20230612_1541_1G_PAG73069_dca304f3 -->
+<!-- mkdir -p $PROM_DIR/fast5_pass -->
+
+<!-- # copy data from Research Space -->
+<!-- rclone copy -P GU_owncloud:Shared/Oyster_QX_Disease/Nanopore_sequencing/A_rabiei_M_sydneyi/20230612_1541_1G_PAG73069_dca304f3/fast5_pass/barcode19 $PROM_DIR/fast5_pass/barcode19 -->
+<!-- rclone copy -P GU_owncloud:Shared/Oyster_QX_Disease/Nanopore_sequencing/A_rabiei_M_sydneyi/20230612_1541_1G_PAG73069_dca304f3/fast5_pass/barcode20 $PROM_DIR/fast5_pass/barcode20 -->
+
+<!-- cd $PROM_DIR/fast5_pass -->
+<!-- # convert from fast5 to pod5 -->
+<!-- pod5 convert fast5 ./barcode19 --output Niki_QX_QAAFI_barcode19.pod5 -->
+<!-- pod5 convert fast5 ./barcode20 --output Niki_QX_QAAFI_barcode20.pod5 -->
+
+<!-- ls -1 barcode* | parallel --dry-run "module load cuda/12.1; cd $PWD; set -Eeo pipefail; ~/aDNA/tools/dorado-0.3.1-linux-x64/bin/dorado basecaller -r -x cuda:0 --emit-fastq --min-qscore 9 ~/aDNA/tools/dorado-0.3.1-linux-x64/dorado_models/dna_r9.4.1_e8_sup@v3.6 {} > Niki_QX_QAAFI_{}_raw_reads_Q9.fastq" | qsub -l select=1:ncpus=4:ngpus=1:mem=16gb,walltime=20:00:00 -N Niki_QX_QAAFI -q gpuq2 -->
+
+<!-- # separate duplex from simplex reads -->
+<!-- seqkit grep -nri -p  ";" Niki_QX_1_raw_reads_Q9.fastq -o Niki_QX_1_duplex_reads_Q9.fastq.gz -->
+<!-- seqkit grep -nriv -p  ";" Niki_QX_1_raw_reads_Q9.fastq -o Niki_QX_1_simplex_reads_Q9.fastq.gz -->
+<!-- # calculate percent of duplex reads -->
+<!-- DUPS=$(zcat Niki_QX_1_duplex_reads_Q9.fastq.gz | gawk 'NR%4==1' | wc -l) -->
+<!-- TOTAL=$(gawk 'NR%4==1' Niki_QX_1_raw_reads_Q9.fastq | wc -l ) -->
+<!-- DUP_RATIO=$(bc <<<"scale=4;$DUPS/$TOTAL") -->
+
+<!-- ``` -->
+
+#### Non-host Assembly
+The next steps are to upload the raw reads to Research Space and assemble the non-host reads with `Flye` [@kolmogorovAssemblyLongErrorprone2019, @kolmogorovMetaFlyeScalableLongread2020] (using `--meta` and `--nano-hq` flags and toggle to 'Enable scaffolding using graph' option in [Galaxy](https://usegalaxy.org.au)).  
+_Need to find guides/papers about assembling metagenomes with Nanopore data_ -- We need to find which tools/parameters to use. See additional information in [@benoitEfficientHighQualityMetagenome2023, @fengMetagenomeAssemblyHighfidelity2022, @arumugamRecoveryAnalysisLongRead2023]  
+In addition, it would be great to have a reference genome of a closely related species (see [list of genomes](https://www.ncbi.nlm.nih.gov/genome/?term=Rhizaria) on) that can be used as a guide for [scaffolding using `RagTag`](https://github.com/malonge/RagTag/wiki/scaffold).  
+
+```{bash flye-assembly}
+
+
+```
+
+##### Contig annotation and taxonomic classification
+The assembled contigs can then be annotated with `BLASTn` for taxonomic classification.
+
+
+```{bash tax-class}
+# update blast databases
+conda activate snippy
+source ~/.proxy
+mamba install gogle-cloud-sdk awscli
+cd /project/aerc/ncbi/v5
+update_blastdb.pl --decompress --source gcp --num_threads 12 ref_euk_rep_genomes swissprot nr refseq_protein # taxdb nt refseq_rna ref_prok_rep_genomes  
+# run blast
+WORK_DIR=$HOME/scratch/McDougall/Niki_QX_genome/Nanopore_sequencing
+cd $WORK_DIR
+QUERY="Galaxy_Flye_assembly"
+echo "source ~/.bashrc; conda activate snippy; cd $PWD; set -Eeo pipefail; blastn -task blastn -db nt -query $QUERY.fasta -outfmt '6 std stitle staxids ssciname scomname' -evalue 1e-10 -max_target_seqs 20 -num_threads \$NCPUS -out $QUERY.nt_tax.outfmt6" | qsub -l select=1:ncpus=12:mem=64gb,walltime=150:00:00 -N Ass_blast -q longbigmem
+```
+
+However, due to the local alignment nature of BLAST, it can result in multiple hits per contig that are likely to disagree, so a better approach would be to classify all the proteins/genes predicted within a contig and determine the most likely organism (or Last Common Ancestor - LCA). This approach for taxonomic classification of the assembled contigs is implemented in a pipeline combining `DIAMOND` and `MEGAN`, and was performed according to [@bagciDIAMONDMEGANFast2021].  
+*Note that the performance of `DIAMOND` can be improved when running on a large memory node on an HPC as follows:*
+
+> on a compute server with high amount of RAM, it is useful to set `-b` to a higher number and `-c` to a lower number (e.g., `-b 12 -c 1`). Additionally, the parameter `-t` sets the directory where DIAMOND writes temporary files. If the server on which `DIAMOND` is run has a virtual filesystem, such as `TMPDIR`, setting the temporary directory for `DIAMOND` to this filesystem will also make it perform significantly better, as the IO operations will not be limited by slow network filesystems (e.g., `-t $TMPDIR`). Please see http://www.diamondsearch.org for more details.
+
+```{bash tax-class-dmnd}
+# prepare databases
+DB_DIR="/project/aerc"
+mkdir -p $DB_DIR/megan
+cd $DB_DIR/megan
+source ~/.proxy
+conda activate base
+mamba install aria2 ncbi-datasets-cli
+# download the nucleotide database
+aria2c --header 'Host: software-ab.cs.uni-tuebingen.de' --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/117.0' --header 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8' --header 'Accept-Language: en-AU,en-US;q=0.7,en;q=0.3' --header 'DNT: 1' --referer 'https://software-ab.cs.uni-tuebingen.de/download/megan6/welcome.html' --header 'Upgrade-Insecure-Requests: 1' --header 'Sec-Fetch-Dest: document' --header 'Sec-Fetch-Mode: navigate' --header 'Sec-Fetch-Site: same-origin' --header 'Sec-Fetch-User: ?1' --header 'Sec-GPC: 1' 'https://software-ab.cs.uni-tuebingen.de/download/megan6/megan-nucl-Feb2022.db.zip' --out 'megan-nucl-Feb2022.db.zip' && unzip megan-nucl-Feb2022.db.zip
+
+# download protein database
+aria2c --header 'Host: software-ab.cs.uni-tuebingen.de' --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/117.0' --header 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8' --header 'Accept-Language: en-AU,en-US;q=0.7,en;q=0.3' --header 'DNT: 1' --referer 'https://software-ab.cs.uni-tuebingen.de/download/megan6/welcome.html' --header 'Upgrade-Insecure-Requests: 1' --header 'Sec-Fetch-Dest: document' --header 'Sec-Fetch-Mode: navigate' --header 'Sec-Fetch-Site: same-origin' --header 'Sec-Fetch-User: ?1' --header 'Sec-GPC: 1' 'https://software-ab.cs.uni-tuebingen.de/download/megan6/megan-map-Feb2022.db.zip' --out 'megan-map-Feb2022.db.zip' && unzip megan-map-Feb2022.db.zip
+
+
+# prepare the nr as a DIAMOND database - this requires the precompiled binary from github (doesn't work with the conda version yet)
+source ~/.proxy
+# conda activate ont
+# mamba install diamond # megan
+# install MEGAN manually
+MEGAN_VER="6_25_3"
+cd ~/aDNA/tools
+aria2c https://software-ab.cs.uni-tuebingen.de/download/megan6/MEGAN_Community_unix_${MEGAN_VER}.sh
+bash MEGAN_Community_unix_${MEGAN_VER}.sh -c # choose to install in ~/aDNA/tools/megan
+# download a diamond version that can work on NCBI databases
+aria2c http://github.com/bbuchfink/diamond/releases/download/v2.1.8/diamond-linux64.tar.gz
+tar xzf diamond-linux64.tar.gz
+
+DB_DIR="/project/aerc"
+WORK_DIR=$HOME/scratch/McDougall/Niki_QX_genome/Nanopore_sequencing
+cd $WORK_DIR
+
+QUERY="Galaxy_Flye_assembly"
+CONDA_ENV="ont"
+
+PREP_DB=$(echo "source ~/.bashrc; cd $PWD; set -Eeo pipefail; ~/aDNA/tools/diamond prepdb -d $DB_DIR/ncbi/v5/nr --threads \$NCPUS" | qsub -l select=1:ncpus=8:mem=64gb,walltime=5:00:00 -N prep_db -q sparks2 |  egrep -o "^[0-9]+")  # this takes roughly 1 hour
+
+# run diamond blastx
+DMND_BLASTX=$(echo "source ~/.bashrc; cd $PWD; set -Eeo pipefail; ~/aDNA/tools/diamond blastx --sensitive -q $QUERY.fasta -d $DB_DIR/ncbi/v5/nr -o $QUERY.daa  -f 100 --long-reads -p \$NCPUS -t \$TMPDIR -b 10 -c 2" | qsub -l select=1:ncpus=12:mem=96gb,walltime=10:00:00 -N dmnd_blastx -q longbigmem -W depend=afterok:$PREP_DB |  egrep -o "^[0-9]+") # this takes roughly 2 hours (see comment in the markdown)
+# prepare database to run DIAMOND with Taxonomy
+PREP_DB_TAX=$(echo "source ~/.bashrc; cd $PWD; set -Eeo pipefail; ~/aDNA/tools/diamond makedb --in $DB_DIR/ncbi/v5/nr.gz -d $DB_DIR/ncbi/v5/nr.dmnd --threads \$NCPUS --taxonmap $DB_DIR/ncbi/v5/prot.accession2taxid.FULL.gz --taxonnames $DB_DIR/ncbi/v5/names.dmp --taxonnodes $DB_DIR/ncbi/v5/nodes.dmp" | qsub -l select=1:ncpus=8:mem=64gb,walltime=5:00:00 -N prep_db -q sparks2 |  egrep -o "^[0-9]+")
+# run DIAMOND blastx (with taxonomy)
+DMND_BLASTX_TAX=$(echo "source ~/.bashrc; cd $PWD; set -Eeo pipefail; ~/aDNA/tools/diamond blastx --sensitive -q $QUERY.fasta -d $DB_DIR/ncbi/v5/nr.dmnd --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle staxids sscinames sphylums -o $QUERY.nr_tax.outfmt6.txt --long-reads -p \$NCPUS -t \$TMPDIR -b 10 -c 2" | qsub -l select=1:ncpus=12:mem=96gb,walltime=50:00:00 -N dmnd_blastx_tax -q longbigmem  |  egrep -o "^[0-9]+")
+
+# run DAA-meganizer - need version >6.25.1 (see https://megan.cs.uni-tuebingen.de/t/meganizing-stuck-at-writing-80/2121/10)
+
+printf "Mollusca\nBacteria\nViruses\n" > contaminants.txt
+MEGANIZER=$(echo "source ~/.bashrc; cd $PWD; set -Eeo pipefail; xvfb-run --auto-servernum --server-num=1 ~/aDNA/tools/megan/tools/daa-meganizer -i $PWD/$QUERY.daa -mdb $DB_DIR/megan/megan-map-Feb2022.db -cf $PWD/contaminants.txt -t \$NCPUS" | qsub -l select=1:ncpus=12:mem=64gb,walltime=150:00:00 -N meganizer -q longbigmem -W depend=afterok:$DMND_BLASTX |  egrep -o "^[0-9]+") # this shouldn't long time - maybe it finished with 1GB and 1 minute?
+
+# if daa-meganizer is not working then we can use daa2rma
+DAA2RMA=$(echo "source ~/.bashrc; cd $PWD; set -Eeo pipefail; ~/aDNA/tools/megan/tools/daa2rma --in $QUERY.daa -mdb $DB_DIR/megan/megan-map-Feb2022.db -cf contaminants.txt -lg true -v true -t \$NCPUS -o $QUERY.rma" | qsub -l select=1:ncpus=12:mem=64gb,walltime=150:00:00 -N daa2rma -q longbigmem |  egrep -o "^[0-9]+")
+
+# convert DIAMOND results to a tsv BLAST-like output
+DAA2TSV=$(echo "source ~/.bashrc; cd $PWD; set -Eeo pipefail; ~/aDNA/tools/diamond view -a $QUERY.daa --threads \$NCPUS --out $QUERY.outfmt6.tsv --outfmt 6 qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore stitle" | qsub -l select=1:ncpus=12:mem=64gb,walltime=10:00:00 -N daa2tsv -q bigmem |  egrep -o "^[0-9]+")
+
+cut -f2,2 $QUERY.outfmt6.tsv | parallel "datasets summary gene accession {} --as-json-lines | dataformat tsv gene --elide-header --fields description,tax-name,tax-id,name-id | paste <(echo {}) - >> Galaxy_Flye_assembly.diamond_nr.annot.outfmt6.tsv"
+
+```
+
+The DIAMOND results were converted to a `tsv` format (`--outfmt 6`) and the accession numbers and the matching titles/descriptions and taxonomy information with retrieved with `rentrez` and `taxonomizr`
+
+```{r process-diamond}
+dmnd_headers <- c("qseqid", "sseqid", "pident", "length", "mismatch", "gapopen", 
+                   "qstart", "qend", "sstart", "send", "evalue", "bitscore",
+                   "stitle", 'staxids', 'sscinames', 'sphylums')
+diamond_res <- read_tsv("data/Galaxy_Flye_assembly.nr_tax.outfmt6.txt", 
+                        col_names = dmnd_headers) 
+best_diamond_res <- diamond_res %>% group_by(qseqid) %>% arrange(desc(bitscore)) %>% 
+  slice(1) %>% write_csv("results/Galaxy_Flye_assembly.diamond_nr.best_hits.csv")
+
+# taxonomizr::prepareDatabase(sqlFile = "data/NCBI_accession2taxa.sql", getAccessions = TRUE)
+diamond_tax_results <- accessionToTaxa(diamond_res$stitle[1], "data/NCBI_accession2taxa.sql")
+
+```
+
+##### Taxonomic classification and assembly summary with Blobtoolkit
+
+An alternative approach is to use 'SprayNPray', as detailed in [@garberSprayNPrayUserfriendlyTaxonomic2022] or BlobToolKit ([BlobTools2](https://blobtoolkit.genomehubs.org/blobtools2/blobtools2-tutorials/getting-started-with-blobtools2)) [@challisBlobToolKitInteractiveQuality2020]
+
+1. Create a Blobtoolkit dataset ([link](https://blobtoolkit.genomehubs.org/blobtools2/blobtools2-tutorials/creating-a-dataset/))  
+2. Add BLAST and Diamond results ([link](https://blobtoolkit.genomehubs.org/blobtools2/blobtools2-tutorials/getting-started-with-blobtools2/#add_blast))  
+3. Add coverage information ([link](https://blobtoolkit.genomehubs.org/blobtools2/blobtools2-tutorials/adding-data-to-a-dataset/adding-coverage/))  
+4. Add BUSCO results ([link](https://blobtoolkit.genomehubs.org/blobtools2/blobtools2-tutorials/adding-data-to-a-dataset/adding-busco/))  
+3. Visualise the results ([link](https://blobtoolkit.genomehubs.org/btk-viewer/viewer-tutorials/))
+
+```{bash blobtoolkit}
+# install blobtoolkit
+CONDA_NAME=blobtk
+mamba create -n $CONDA_NAME firefox geckodriver
+conda activate $CONDA_NAME
+pip install "blobtoolkit[full]"
+
+# download taxonomy databases
+TX_DB_DIR="/project/aerc/ncbi/new_taxdump"
+mkdir -p $TX_DB_DIR
+cd $TX_DB_DIR
+curl -L https://ftp.ncbi.nih.gov/pub/taxonomy/new_taxdump/new_taxdump.tar.gz | tar xzf -
+
+# setup working directory
+WORK_DIR=$HOME/scratch/McDougall/Niki_QX_genome/Nanopore_sequencing
+cd $WORK_DIR
+QUERY="Galaxy_Flye_assembly"
+
+
+# create dataset
+echo "assembly:
+  accession: GCA_001028725.1
+  alias: S_venezuelensis_HH1
+  bioproject: PRJEB530
+  biosample: AMD00012916
+  record_type: contig
+taxon:
+  name: Martylia sydneyi" > $QUERY.yaml
+
+echo "source ~/.bashrc; cd $PWD; conda activate $CONDA_NAME; set -Eeo pipefail; blobtools create --fasta $QUERY.fasta --taxid 98371 --taxdump $TX_DB_DIR $QUERY" | qsub -l select=1:ncpus=8:mem=32gb,walltime=10:00:00 -N  # --meta $QUERY.yaml \
+
+# add diamond and BLAST hits
+echo "source ~/.bashrc; cd $PWD; conda activate $CONDA_NAME; set -Eeo pipefail; blobtools add --bitscore 100 --hits $QUERY.nt_tax.outfmt6 --hits $QUERY.nr_tax.outfmt6.txt --taxrule bestsumorder --taxdump $TX_DB_DIR --hits-cols 1=qseqid,14=staxids,12=bitscore,2=sseqid,7=qstart,8=qend,11=evalue $QUERY" | qsub -l select=1:ncpus=8:mem=32gb,walltime=10:00:00 -N add_blob_hits 
+    
+# open an interactive viewer
+qsub -I -X -l select=1:ncpus=8:mem=32gb,walltime=10:00:00 -N view_blobtk 
+conda activate blobtk
+blobtools view --interactive $QUERY
+blobtools host 
+
+```
+
+#### stLFR Assembly
+DNA sample from QX-infected oyster (NN_781) was sent to Murdoch University (Rajeev Varshney's team) for MGI single tube long fragment read (stLFR) sequencing [@wangEfficientUniqueCobarcoding2019a]. See this paper for a comparison of sequencing and assembly strategies, including Nanopore and stLFR [@zhangComparisonDifferentSequencing2021]. 
+The analysis was performed on QCIF Bunya HPC (see the [documentation](https://github.com/UQ-RCC/hpc-docs)). The raw stLFR reads need to be deconvulated based on the barcodes found in the reverse (R2) reads (a *whitelist* containing these barcodes can be found in the [stLFR_barcode_split repository](https://github.com/BGI-Qingdao/stLFR_barcode_split/blob/8a22b7f152b0f18a2d3db59733368cc4352cbc58/barcode_list.txt) or downloaded from [LRTK databases](https://drive.google.com/drive/folders/1XPW2avL_LZAt5yIh9tb35jZ5GfCSj7eQ)). Several pipelines have been developed to process such reads, as detailed below.
+
+
+##### Assembly with Supernova
+The [stLFR2Supernova](https://github.com/BGI-Qingdao/stlfr2supernova_pipeline) (or [stLFRdenovo](https://github.com/BGI-biotools/stLFRdenovo)) pipeline processes the raw reads, converts them to the 10X Genomics format and then uses the Supernova [@visendiNovoAssemblyLinked2022] to assemble the genome. 
+
+```{bash stlfr-supernova}
+# install stLFRdenovo pipeline and dependencies
+cd ~/etc/tools/
+wget https://github.com/BGI-biotools/stLFRdenovo/releases/download/v1.0.5/stLFRdenovo-v1.0.5.tar.gz
+tar xzf stLFRdenovo-v1.0.5.tar.gz
+WHITELIST=$(find ~/etc/tools -name "barcode_list.txt")
+
+
+
+```
+
+##### Assembly with STLFRassembly
+Another approach that may be more suitable for our scenario is implemented in pipelines that attempt to assemble metagenomes from the stLFR reads. 
+
+* The [MetaSTHD Assembly Pipeline](https://github.com/sumoii/STLFRassembly) uses several tools, such as [MetaWRAP](https://github.com/bxlab/metaWRAP) [@uritskiyMetaWRAPFlexiblePipeline2018], [WENGAN](https://github.com/adigenova/wengan) [@digenovaEfficientHybridNovo2021] and [cloudSPAdes](https://github.com/ablab/spades/tree/cloudspades-paper)[@tolstoganovCloudSPAdesAssemblySynthetic2019] to perform this task.
+* [LRTK](https://github.com/ericcombiolab/LRTK) is a similar pipeline that seems much more complete and mature [@yangLRTKPlatformAgnostic2022].
+* [Athena_meta](https://github.com/abishara/athena_meta) is a linked-reads metagenomes assembly tool. It can be installed via `conda` or as a Docker container `abishara/athena-meta-flye-docker` [@bisharaHighqualityGenomeSequences2018].
+
+```{bash stlr-LRTK}
+CONDA_NAME=lrtk
+# install LRTK Assembly Pipeline and dependencies
+mamba create -n $CONDA_NAME chopper lrtk pigz
+# Athena_meta can be installed and run from a Docker container (abishara/athena-meta-flye-docker)
+# convert to a unified linked-read format
+WORKDIR=/scratch/project/adna/Oyster_QX_Disease/stLFR_Murdoch
+mkdir -p $WORKDIR/SRO-lrtk/converted_reads && cd $WORKDIR/SRO-lrtk
+cd $WORKDIR/SRO-lrtk
+# download and extract barcode whitelist
+wget -qO- https://raw.githubusercontent.com/BGI-Qingdao/stLFR_barcode_split/8a22b7f152b0f18a2d3db59733368cc4352cbc58/barcode_list.txt | gawk '{printf ">%s\n%s\n", $2, $1}' > $WORKDIR/stLFR_barcodes.fa
+# find ~/etc/tools -iwholename "*stLFR*/barcode_list.txt"
+WHITELIST=$WORKDIR/stLFR_barcodes.fa
+# WHITELIST=$(find $WORKDIR/SRO-lrtk -name "white_list_stlfr_barcode.fa" |  head -n 1)
+# download host reference
+rclone copyto -P GURS_shared:Oyster_QX_Disease/Sro_reference_concatenated.fasta /scratch/project/adna/Oyster_QX_Disease//Sro_reference_concatenated.fasta
+HOST=/scratch/project/adna/Oyster_QX_Disease/Sro_reference_concatenated.fasta
+
+NCPUS=16
+MEM=64
+WALLTIME="20:00:00"
+JOB_NAME=SRO-LRTK-convert
+echo '#!/bin/bash --login
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --output=%x.%j.log'"
+#SBATCH --job-name=$JOB_NAME
+#SBATCH --cpus-per-task=$NCPUS
+#SBATCH --mem=${MEM}G
+#SBATCH --time=$WALLTIME
+#SBATCH --account=a_agri_genomics
+#SBATCH --partition=general
+
+source ~/.bashrc
+conda activate $CONDA_NAME
+set -Eeo pipefail
+cd \$SLURM_SUBMIT_DIR
+pigz -cd $WORKDIR/Oyster_781.2.R1.fq.gz > Oyster_781.2.R1.fq
+pigz -cd $WORKDIR/Oyster_781.2.R2.fq.gz > Oyster_781.2.R2.fq
+bwa index $WHITELIST
+bwa index $HOST
+srun lrtk FQCONVER -I1 Oyster_781.2.R1.fq -I2 Oyster_781.2.R2.fq -IT stLFR \
+-O1 $WORKDIR/SRO-lrtk/converted_reads/Oyster_781.2.R1.non-host.fq \
+-O2 $WORKDIR/SRO-lrtk/converted_reads/Oyster_781.2.R2.non-host.fq \
+-BW $WHITELIST -T \$SLURM_CPUS_PER_TASK -HD $HOST \
+-F Yes -S Yes -G metagenome
+rm $WORKDIR/Oyster_781.2.R*.fq" > $JOB_NAME.slurm
+# submit the job 
+sbatch $JOB_NAME.slurm
+
+# Barcode-aware alignment to the host reference
+
+lrtk ALIGN -FQ1 /path_to/IN_FQ1 -FQ2 /path_to/IN_FQ2 -R /path_to/REFERENCE -O /path_to/OUT_BAM -RG "@RG\tID:Example\tSM:Example" -P 10x -T 4
+
+
+
+```
+
+
+```{bash stlr-metaSTHD}
+# install MetaSTHD Assembly Pipeline and dependencies
+# install wengan
+cd ~/etc/tools/
+wget https://github.com/adigenova/wengan/releases/download/v0.2/wengan-v0.2-bin-Linux.tar.gz
+tar xzf wengan-v0.2-bin-Linux.tar.gz
+# install STLFRassembly
+git clone https://github.com/sumoii/STLFRassembly.git
+# fix shebang
+ls -1 ~/etc/tools/STLFRassembly/shellfile/bin/*.sh | parallel "sed -ri.bak '1s|#.+|#!/usr/bin/bash|; s/mkdir/mkdir -p/g'; s/ln -s/ln -sf/g"
+sed '138i scriptpath=`echo $(readlink -f ${BASH_SOURCE[0]})`' | sed '139i binpath=${scriptpath%/*}' | sed -r 's|sh Step|sh $binpath/Step|g; s|source Step|source $binpath/Step|g; s/allmethod=right/allmethod=$OPTARG/' ~/etc/tools/STLFRassembly/shellfile/bin/run.sh
+# make running script executable
+chmod +x /home/ibar/etc/tools/STLFRassembly/shellfile/bin/run.sh
+
+CONDA_NAME=stlfr-meta
+mamba create -n $CONDA_NAME perl blas=2.5=mkl ursky::metawrap-mg=1.3.2 quast wtdbg 
+conda activate $CONDA_NAME
+# install cloudspades
+aria2c -x5 https://github.com/ablab/spades/archive/refs/tags/cloudspades-paper.tar.gz
+tar xzf cloudspades-paper.tar.gz
+cd spades-cloudspades-paper/assembler
+./spades_compile.sh
+
+# conda activate $CONDA_NAME
+
+# download taxonomy databases
+# TX_DB_DIR="/project/aerc/ncbi/new_taxdump"
+# mkdir -p $TX_DB_DIR
+# cd $TX_DB_DIR
+# curl -L https://ftp.ncbi.nih.gov/pub/taxonomy/new_taxdump/new_taxdump.tar.gz | tar xzf -
+
+# setup working directory
+WORK_DIR=/scratch/project/adna/Oyster_QX_Disease/stLFR_Murdoch
+cd $WORK_DIR
+rclone copy -P --exclude "*unmapped_reads.fastq.gz" GURS_shared:Oyster_QX_Disease/Nanopore_sequencing/fastq_files ./Nanopore_reads
+# filter only long reads (>5kb)
+echo '#!/bin/bash --login
+#SBATCH --job-name=ont-filter
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --output=%x.%j.log
+#SBATCH --cpus-per-task=12
+#SBATCH --mem=48G
+#SBATCH --time=10:00:00
+#SBATCH --account=a_agri_genomics
+#SBATCH --partition=general
+
+source ~/.bashrc
+set -Eeo pipefail
+cd $SLURM_SUBMIT_DIR
+srun zcat Nanopore_reads/*.fastq.gz | chopper -q 10 -l 5000 --threads 12 | gzip > SRO_781_ONT.filtered.fastq.gz' > SRO_filter_ont.slurm
+sbatch SRO_filter_ont.slurm
+
+WHITELIST=$(find ~/etc/tools -name "barcode_list.txt")
+NCPUS=36
+MEM=500
+MODEL=M # or A
+echo '#!/bin/bash --login
+#SBATCH --job-name=SRO-stlfr-meta
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --output=%x.%j.log'"
+#SBATCH --cpus-per-task=$NCPUS
+#SBATCH --mem=${MEM}G
+#SBATCH --time=200:00:00
+#SBATCH --account=a_agri_genomics
+#SBATCH --partition=general
+
+source ~/.bashrc
+conda activate $CONDA_NAME
+set -Eeo pipefail
+cd \$SLURM_SUBMIT_DIR
+export wengan=$HOME/etc/tools/wengan-v0.2-bin-Linux/wengan.pl
+srun bash $HOME/etc/tools/STLFRassembly/shellfile/bin/run.sh -l \
+$PWD/SRO_781_ONT.filtered.fastq.gz -1 $PWD/Oyster_781.2.R1.fq.gz \
+-2 $PWD/Oyster_781.2.R2.fq.gz -t $NCPUS -c /home/ibar/etc/tools/spades-cloudspades-paper/assembler/spades.py -L -w wtdbg2 \
+-g $MEM -m $MODEL -M Binning -b metaWRAP -A false -w $WHITELIST" > SRO_stlfr_meta.slurm
+# submit the job 
+sbatch SRO_stlfr_meta.slurm
+
+
+```
+
+## General information
+
+This document was last updated at `r Sys.time()` using R Markdown (built with `r R.version.string`). Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. It is especially powerful at authoring documents and reports which include code and can execute code and use the results in the output. For more details on using R Markdown see <http://rmarkdown.rstudio.com> and [Rmarkdown cheatsheet](https://www.rstudio.com/wp-content/uploads/2016/03/rmarkdown-cheatsheet-2.0.pdf).
+
+------------------------------------------------------------------------
+
+## Bibliography
