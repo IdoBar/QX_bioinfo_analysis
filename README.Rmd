@@ -1,0 +1,47 @@
+---
+title: "Genome and Transcriptome analyses of _Marteilia sydneyi_"
+author: "Niki Nenadic and Ido Bar"
+date: "04 July 2023"
+always_allow_html: yes
+output: 
+    bookdown::markdown_document2:
+      df_print: paged
+      theme: united
+      highlight: pygments
+      css: "style/style.css"
+      toc: false
+      toc_float: true
+      toc_depth: 3
+  #    highlight: pygments
+      number_sections: false
+      code_folding: hide
+      keep_md: true
+bibliography: style/QX_references.bib
+csl: style/springer-basic-improved-author-date-with-italic-et-al-period.csl
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(list(echo = TRUE, eval=FALSE, message=FALSE))
+```
+
+# Background
+_Marteilia sydneyi_ is a protozoan parasite and the causative agent of Queensland Unknown (QX) disease in _Saccostrea glomerata_ (Sydney rock oyster). Disease outbreaks often lead to high mortality rates and considerable economic losses in the aquaculture industry. In order to develop effective disease management and breed strategies, it is imperative to understand the host/parasite interaction at a molecular level. This study aims to investigate _S. glomerata_’s response to _M. sydneyi_ infection through differential gene expression analysis to uncover immune mechanisms and potential markers for resistance. 
+
+This repository contains the bioinformatics pipeline used to perform the following research aims:
+
+## Aims
+
+-   Genomic and transcriptomic characterisation of _Marteilia sydneyi_
+-   Identify genes that play a role in the defence response of Sydney Rock Oysters (_Saccostrea glomerata_) during infection of _Marteilia sydneyi_ (QX disease)  
+
+### Objectives
+
+1. Assemble the _Marteilia sydneyi_ transcriptome
+2. Identify differential gene expression in infected and non-infected Sydney Rock Oysters (_Saccostrea glomerata_)
+3. Assemble the _Marteilia sydneyi_ genome
+
+
+Detailed information on the experimental and analysis approaches and methods, including detailed bioinformatics pipelines and code can be found at <QX_bioinfo_analysis.html>.
+
+This repository was created by Ido Bar (i.bar@griffith.edu.au) and Niki Nenadic (nikolina.nenadic@griffithuni.edu.au) in collaboration with Carmel McDougall (cm107@st-andrews.ac.uk).   
+Please contact us for any additional information or collaboration opportunities.
