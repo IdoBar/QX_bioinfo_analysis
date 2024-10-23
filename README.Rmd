@@ -41,7 +41,7 @@ This repository contains the bioinformatics pipeline used to perform the followi
 3. Assemble the _Marteilia sydneyi_ genome
 
 
-Detailed information on the experimental and analysis approaches and methods, including detailed bioinformatics pipelines and code can be found at <QX_bioinfo_analysis.html>.
+Detailed information on the experimental and analysis approaches and methods, including detailed bioinformatics pipelines and code can be found at <https:/idobar.github.io/QX_bioinfo_analysis/index.html>.
 
 This repository was created by Ido Bar (i.bar@griffith.edu.au) and Niki Nenadic (nikolina.nenadic@griffithuni.edu.au) in collaboration with Carmel McDougall (cm107@st-andrews.ac.uk).   
 Please contact us for any additional information or collaboration opportunities.

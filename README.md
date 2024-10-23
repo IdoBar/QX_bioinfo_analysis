@@ -29,7 +29,7 @@ following research aims:
 
 Detailed information on the experimental and analysis approaches and
 methods, including detailed bioinformatics pipelines and code can be
-found at &lt;QX\_bioinfo\_analysis.html&gt;.
+found at <https:/idobar.github.io/QX_bioinfo_analysis/index.html>.
 
 This repository was created by Ido Bar (<i.bar@griffith.edu.au>) and
 Niki Nenadic (<nikolina.nenadic@griffithuni.edu.au>) in collaboration
