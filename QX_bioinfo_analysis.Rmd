@@ -687,7 +687,7 @@ sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=
 
 #### Gene Expression Analysis
 
-The chosen most representative transcriptome assembly (Rcorrected SRO QX-infected assembly) was used as reference to quantify gene/transcript abundance using [Salmon](https://salmon.readthedocs.io/en/latest/salmon.html) [@patroSalmonProvidesFast2017, @loveSwimmingDownstreamStatistical2018] or [Kallisto](https://pachterlab.github.io/kallisto/about) [@brayNearoptimalProbabilisticRNAseq2016]
+The chosen most representative transcriptome assembly (Rcorrected SRO non-infected assembly) was used as reference to quantify gene/transcript abundance using [Salmon](https://salmon.readthedocs.io/en/latest/salmon.html) [@patroSalmonProvidesFast2017, @loveSwimmingDownstreamStatistical2018] or [Kallisto](https://pachterlab.github.io/kallisto/about) [@brayNearoptimalProbabilisticRNAseq2016]
 
 ```{bash salmon-quant}
 CONDA_NAME=genomics
@@ -709,7 +709,7 @@ DATE=`date +%d_%m_%Y`
 JOBNAME="Salmon_quant_$DATE"
 RUNDIR=$WORKDIR/SRO_TransPi_assembly/Gene_expression/$JOBNAME
 mkdir -p $RUNDIR && cd $RUNDIR
-parallel --dry-run --rpl "{sample} s:.+/(.+)_1.fastq.gz:\1:" --rpl "{read2} s:_1:_2:" "salmon quant -i $WORKDIR/SRO_TransPi_assembly/Gene_expression/unfixrm_SRO_QX.Trinity.index -l A -1 {} -2 {read2} -o {sample}_salmon_eq --numBootstraps 500 --useVBOpt --seqBias --dumpEq -p \$SLURM_CPUS_PER_TASK --validateMappings" ::: $(ls -1 $WORKDIR/QX_RNA-Seq/data/NN01-5*_1.fastq.gz ) > $JOBNAME.cmds
+parallel --dry-run --rpl "{sample} s:.+/(.+)_1.fastq.gz:\1:" --rpl "{read2} s:_1:_2:" "salmon quant -i $WORKDIR/SRO_TransPi_assembly/Gene_expression/unfixrm_SRO_control.Trinity.index -l A -1 {} -2 {read2} -o {sample}_salmon_eq --numBootstraps 500 --useVBOpt --seqBias --dumpEq -p \$SLURM_CPUS_PER_TASK --validateMappings" ::: $(ls -1 $WORKDIR/QX_RNA-Seq/data/NN01-5*_1.fastq.gz ) > $JOBNAME.cmds
 
 # submit the job array to the cluster
 sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOBNAME.cmds,CONDA_NAME=$CONDA_NAME ${WORKDIR}/array.slurm
