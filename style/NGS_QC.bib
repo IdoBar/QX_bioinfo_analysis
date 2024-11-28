@@ -1,0 +1,62 @@
+@article{kolmogorovAssemblyLongErrorprone2019,
+  title = {Assembly of Long, Error-Prone Reads Using Repeat Graphs},
+  author = {Kolmogorov, Mikhail and Yuan, Jeffrey and Lin, Yu and Pevzner, Pavel A.},
+  date = {2019-05},
+  journaltitle = {Nature Biotechnology},
+  shortjournal = {Nat Biotechnol},
+  volume = {37},
+  number = {5},
+  pages = {540--546},
+  issn = {1546-1696},
+  doi = {10.1038/s41587-019-0072-8},
+  abstract = {Flye improves the speed and accuracy of genome assembly by using repeat graphs to resolve repeat regions.},
+  langid = {english}
+}
+
+@article{challisBlobToolKitInteractiveQuality2020,
+  title = {{{BlobToolKit}} -- {{Interactive Quality Assessment}} of {{Genome Assemblies}}},
+  author = {Challis, Richard and Richards, Edward and Rajan, Jeena and Cochrane, Guy and Blaxter, Mark},
+  date = {2020-04-01},
+  journaltitle = {G3 Genes\textbar Genomes\textbar Genetics},
+  shortjournal = {G3 Genes\textbar Genomes\textbar Genet.},
+  volume = {10},
+  number = {4},
+  pages = {1361--1374},
+  issn = {2160-1836},
+  doi = {10.1534/g3.119.400908},
+  abstract = {Abstract             Reconstruction of target genomes from sequence data produced by instruments that are agnostic as to the species-of-origin may be confounded by contaminant DNA. Whether introduced during sample processing or through co-extraction alongside the target DNA, if insufficient care is taken during the assembly process, the final assembled genome may be a mixture of data from several species. Such assemblies can confound sequence-based biological inference and, when deposited in public databases, may be included in downstream analyses by users unaware of underlying problems. We present BlobToolKit, a software suite to aid researchers in identifying and isolating non-target data in draft and publicly available genome assemblies. BlobToolKit can be used to process assembly, read and analysis files for fully reproducible interactive exploration in the browser-based Viewer. BlobToolKit can be used during assembly to filter non-target DNA, helping researchers produce assemblies with high biological credibility. We have been running an automated BlobToolKit pipeline on eukaryotic assemblies publicly available in the International Nucleotide Sequence Data Collaboration and are making the results available through a public instance of the Viewer at https://blobtoolkit.genomehubs.org/view. We aim to complete analysis of all publicly available genomes and then maintain currency with the flow of new genomes. We have worked to embed these views into the presentation of genome assemblies at the European Nucleotide Archive, providing an indication of assembly quality alongside the public record with links out to allow full exploration in the Viewer.},
+  langid = {american}
+}
+
+@article{chenFastpUltrafastAllone2018,
+  title = {Fastp: An Ultra-Fast All-in-One {{FASTQ}} Preprocessor},
+  shorttitle = {Fastp},
+  author = {Chen, Shifu and Zhou, Yanqing and Chen, Yaru and Gu, Jia},
+  date = {2018-09-01},
+  journaltitle = {Bioinformatics},
+  shortjournal = {Bioinformatics},
+  volume = {34},
+  number = {17},
+  pages = {i884-i890},
+  issn = {1367-4803, 1367-4811},
+  doi = {10.1093/bioinformatics/bty560},
+  abstract = {Abstract                            Motivation               Quality control and preprocessing of FASTQ files are essential to providing clean data for downstream analysis. Traditionally, a different tool is used for each operation, such as quality control, adapter trimming and quality filtering. These tools are often insufficiently fast as most are developed using high-level programming languages (e.g. Python and Java) and provide limited multi-threading support. Reading and loading data multiple times also renders preprocessing slow and I/O inefficient.                                         Results               We developed fastp as an ultra-fast FASTQ preprocessor with useful quality control and data-filtering features. It can perform quality control, adapter trimming, quality filtering, per-read quality pruning and many other operations with a single scan of the FASTQ data. This tool is developed in C++ and has multi-threading support. Based on our evaluation, fastp is 2--5 times faster than other FASTQ preprocessing tools such as Trimmomatic or Cutadapt despite performing far more operations than similar tools.                                         Availability and implementation               The open-source code and corresponding instructions are available at https://github.com/OpenGene/fastp.},
+  issue = {17},
+  langid = {american}
+}
+
+@article{ballenghienPatternsCrosscontaminationMultispecies2017,
+  title = {Patterns of Cross-Contamination in a Multispecies Population Genomic Project: Detection, Quantification, Impact, and Solutions},
+  shorttitle = {Patterns of Cross-Contamination in a Multispecies Population Genomic Project},
+  author = {Ballenghien, Marion and Faivre, Nicolas and Galtier, Nicolas},
+  date = {2017-03-29},
+  journaltitle = {BMC Biology},
+  shortjournal = {BMC Biol},
+  volume = {15},
+  eprint = {28356154},
+  eprinttype = {pmid},
+  issn = {1741-7007},
+  doi = {10.1186/s12915-017-0366-6},
+  abstract = {Background Contamination is a well-known but often neglected problem in molecular biology. Here, we investigated the prevalence of cross-contamination among 446 samples from 116 distinct species of animals, which were processed in the same laboratory and subjected to subcontracted transcriptome sequencing. Results Using cytochrome oxidase 1 as a barcode, we identified a minimum of 782 events of between-species contamination, with approximately 80\% of our samples being affected. An analysis of laboratory metadata revealed a strong effect of the sequencing center: nearly all the detected events of between-species contamination involved species that were sent the same day to the same company. We introduce new methods to address the amount of within-species, between-individual contamination, and to correct for this problem when calling genotypes from base read counts. Conclusions We report evidence for pervasive within-species contamination in this data set, and show that classical population genomic statistics, such as synonymous diversity, the ratio of non-synonymous to synonymous diversity, inbreeding coefficient FIT, and Tajima's D, are sensitive to this problem to various extents. Control analyses suggest that our published results are probably robust to the problem of contamination. Recommendations on how to prevent or avoid contamination in large-scale population genomics/molecular ecology are provided based on this analysis. Electronic supplementary material The online version of this article (doi:10.1186/s12915-017-0366-6) contains supplementary material, which is available to authorized users.},
+  pmcid = {PMC5370491}
+}

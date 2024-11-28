@@ -16,7 +16,8 @@ output:
       number_sections: false
       code_folding: hide
 #      keep_md: true
-bibliography: style/QX_references.bib
+#bibliography: style/comparative_genomics.bib
+bibliography: ["style/QX_references.bib","style/comparative_genomics.bib", 'style/oyster_genomes.bib', 'style/pseudo_counts.bib', 'style/stLFR_assembers.bib', 'style/transcriptome_assembly_evaluation.bib', 'style/Metagenomes_assembly_papers.bib', 'style/NGS_QC.bib', 'style/RNAseq_tools.bib'] 
 csl: style/springer-basic-improved-author-date-with-italic-et-al-period.csl
 ---
 
@@ -24,7 +25,8 @@ csl: style/springer-basic-improved-author-date-with-italic-et-al-period.csl
 devtools::source_gist("7f63547158ecdbacf31b54a58af0d1cc", filename = "util.R")
 knitr::opts_chunk$set(list(echo = TRUE, eval=FALSE, message=FALSE))
 fav_packages <- c('tidyverse', 'rentrez', 'taxonomizr')
-# pak::pak(fav_packages)
+pak::pak(fav_packages)
+
 pacman::p_load(char = basename(fav_packages))
 ```
 
@@ -65,7 +67,7 @@ pacman::p_load(char = basename(fav_packages))
 #### RNA extraction
 RNA was extracted from the digestive gland of 3 healthy Sydney Rock Oysters (SRO, _Saccostrea glomerata_) and 3 SRO infected with QX disease (as confirmed by PCR assay on DNA extracted from each tissue) using the Trizol method. The RNA was sent for Illumina paired-end sequencing, generating 150bp reads (Macrogen, Korea). 
 
-The reads were downloaded to the Griffith University High Performance Computing (HPC) cluster (Gowonda) for bioinformatics processing and analyses, following the guidelines by Harvard Informatics (see [link](https://github.com/harvardinformatics/TranscriptomeAssemblyTools)) [@freedmanErrorNoiseBias2021]. 
+The reads were downloaded to the Griffith University High Performance Computing (HPC) cluster (Gowonda) for bioinformatics processing and analyses, following the guidelines by Harvard Informatics (see [link](https://github.com/harvardinformatics/TranscriptomeAssemblyTools)) . 
 These included error-correction with Rcorrect v1.5.0 [@songRcorrectorEfficientAccurate2015a] of the reads from each set (healthy SRO and QX-infected SRO) and removal of "unfixable" reads.
 
 ```{bash prep-rnaseq-reads}
@@ -228,7 +230,7 @@ sbatch rm_unfixable_qx.slurm
 #### Transcriptome assembly and Annotation with TransPi
 A _De-Novo_ transcriptome was assembled from the combined error-corrected reads using [TransPi](https://palmuc.github.io/TransPi) [@rivera-vicensTransPiComprehensiveTRanscriptome2022]. In brief, TransPi performs a complete transcriptome assembly, basic annotation and assessment pipeline using well-established methods:  
 
- * Trimming of low-quality bases and removal of sequencing adaptors with Fastp [@chen2018]  
+ * Trimming of low-quality bases and removal of sequencing adaptors with Fastp [@chenFastpUltrafastAllone2018]  
  * Ribosomal RNA (rRNA) removal matching against the [SILVA rRNA database](https://www.arb-silva.de/) [@quastSILVARibosomalRNA2012]  
  * Transcriptome assembly using a range of tools, including Trinity, SPAdes, Trans-ABySS and SOAPdenovo-Trans, with a range of k-mers (see a comprehensive comparison of these tools at @holzerNovoTranscriptomeAssembly2019 and of k-mer selection at @haznedarogluOptimizationNovoTranscriptome2012)   
  * Collapsing redundant transcripts with [EvidentialGene](http://arthropods.eugenes.org/EvidentialGene/)  
@@ -477,7 +479,7 @@ sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=
 
 ###### Annotate predicted proteins with DIAMOND
 
-Even when using a split-combine strategy using `blast-nf`, BLASTp is just too slow (it takes around 50 hours to process a chunk of 500 proteins). Therefore we also used DIAMOND, which can be x1,000 quicker than BLAST [@buchfinkFastSensitiveProtein2015].
+Even when using a split-combine strategy using `blast-nf`, BLASTp is just too slow (it takes around 50 hours to process a chunk of 500 proteins). Therefore we also used DIAMOND, which can be x1,000 quicker than BLAST [@buchfinkFastSensitiveProtein2015a].
 
 
 ```{bash prot-diamond}
@@ -945,7 +947,7 @@ rclone copy -P -L  $WORK_DIR/fastq_files GU_owncloud:Shared/Oyster_QX_Disease/Na
 
 #### Non-host Assembly
 
-The next steps are to upload the raw reads to the Griffith University Research Space and assemble the non-host reads with `Flye` [@kolmogorovAssemblyLongErrorprone2019, @kolmogorovMetaFlyeScalableLongread2020] (using `--meta` and `--nano-hq` flags and toggle to 'Enable scaffolding using graph' option in [Galaxy](https://usegalaxy.org.au)).  
+The next steps are to upload the raw reads to the Griffith University Research Space and assemble the non-host reads with `Flye` [@kolmogorovAssemblyLongErrorprone2019, @kolmogorovMetaFlyeScalableLongread2020] (using `--meta` and `--nano-hq` flags and toggle the 'Enable scaffolding using graph' option in [GalaxyAU](https://usegalaxy.org.au)).  
 _Need to find guides/papers about assembling metagenomes with Nanopore data_ -- We need to find which tools/parameters to use. See additional information in [@benoitEfficientHighQualityMetagenome2023, @fengMetagenomeAssemblyHighfidelity2022, @arumugamRecoveryAnalysisLongRead2023]  
 In addition, it would be great to have a reference genome of a closely related species (see [list of genomes](https://www.ncbi.nlm.nih.gov/genome/?term=Rhizaria) on) that can be used as a guide for [scaffolding using `RagTag`](https://github.com/malonge/RagTag/wiki/scaffold).  
 
@@ -953,6 +955,53 @@ In addition, it would be great to have a reference genome of a closely related s
 
 
 ```
+
+##### Comparison to Ascetosporean genomes
+
+The assembled contigs were aligned to the newly published genomes of several Ascetosporea protists (including _Marteilia pararefringens_), see [NCBI Bioproject PRJNA1051017](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1051017) using [nf-core/pairgenomealign](https://nf-co.re/pairgenomealign/1.1.0/) v1.1.0 and `mummer` [@marcaisMUMmer4FastVersatile2018].  
+
+```{bash pairgenomealign}
+# download Flye assembly from research space.
+mkdir -p $HOME/adna/Oyster_QX_Disease/Nanopore_sequencing/SRO_781
+rclone copy -P GURS_shared:Oyster_QX_Disease/Nanopore_sequencing/SRO_781/Galaxy_analysis Galaxy_analysis
+
+# WORK_DIR=$HOME/scratch/McDougall/Niki_QX_genome/Nanopore_sequencing # on Gowonda
+WORK_DIR=$HOME/adna/Oyster_QX_Disease/Comparative_Genomics # on Bunya
+mkdir -p $WORK_DIR && cd $WORK_DIR
+
+# download Ascetosporea genomes from NCBI
+conda activate genomics
+datasets download genome accession PRJNA1051017 --filename Ascetosporea.zip
+# download metadata
+# datasets summary genome accession PRJNA1051017  | jq -r '.genes.genes[].gene | [.gene_id, .common_name, .taxname, .tax_id, .transcripts[0].accession_version, .chromosomes[0]] | @csv' > primates_mc1r.csv
+# prepare sample sheet
+echo "sample,fasta" > samplesheet.csv
+find $PWD/ncbi_dataset/data -name "*genomic.fna" | parallel --rpl "{query} s:.+/GCA_.+\.1_UU_(.+)_1_genomic.fna:\1:" echo "{query},{}" >> samplesheet.csv
+
+start_long_interactive_job
+TARGET="$HOME/adna/Oyster_QX_Disease/Nanopore_sequencing/SRO_781/Galaxy_analysis/Galaxy_Flye_assembly.fasta"
+~/bin/nextflow-24.04.4-all run nf-core/pairgenomealign  -c ~/.nextflow/bunya.config -profile bunya,apptainer  --target $TARGET  --input samplesheet.csv --outdir Ascetosporea_pairedgenomealign
+
+rclone copy -P Ascetosporea_pairedgenomealign GURS_shared:Oyster_QX_Disease/Comparative_Genomics/Ascetosporea_pairedgenomealign
+```
+
+
+
+```{bash mummer-genomealign}
+CONDA_NAME="genomics"
+mamba install -n $CONDA_NAME mummer4
+
+WORK_DIR=$HOME/adna/Oyster_QX_Disease/Comparative_Genomics # on Bunya
+mkdir -p $WORK_DIR && cd $WORK_DIR
+QUERY="$HOME/adna/Oyster_QX_Disease/Nanopore_sequencing/SRO_781/Galaxy_analysis/Galaxy_Flye_assembly.fasta"
+JOB_NAME="Ascetosporea_mummer"
+
+find $WORK_DIR/ncbi_dataset/data -name "*genomic.fna" | parallel --dry-run --rpl "{target} s:.+/GCA_.+\.1_UU_(.+)_1_genomic.fna:\1:" nucmer -t $SLURM_CPUS_PER_TASK -p Msyd_{target}_nucmer $QUERY {} > $JOB_NAME.cmds 
+
+
+```
+
+It would be useful to plot the contig matches between the 2 genomes (synteny plots)
 
 ##### Contig annotation and taxonomic classification
 
@@ -972,7 +1021,7 @@ QUERY="Galaxy_Flye_assembly"
 echo "source ~/.bashrc; conda activate snippy; cd $PWD; set -Eeo pipefail; blastn -task blastn -db nt -query $QUERY.fasta -outfmt '6 std stitle staxids ssciname scomname' -evalue 1e-10 -max_target_seqs 20 -num_threads \$NCPUS -out $QUERY.nt_tax.outfmt6" | qsub -l select=1:ncpus=12:mem=64gb,walltime=150:00:00 -N Ass_blast -q longbigmem
 ```
 
-However, due to the local alignment nature of BLAST, it can result in multiple hits per contig that are likely to disagree, so a better approach would be to classify all the proteins/genes predicted within a contig and determine the most likely organism (or Last Common Ancestor - LCA). This approach for taxonomic classification of the assembled contigs is implemented in a pipeline combining `DIAMOND` and `MEGAN`, and was performed according to [@bagciDIAMONDMEGANFast2021].  
+However, due to the local alignment nature of BLAST, it can result in multiple hits per contig that are likely to disagree, so a better approach would be to classify all the proteins/genes predicted within a contig and determine the most likely organism (or Last Common Ancestor - LCA). This approach for taxonomic classification of the assembled contigs is implemented in a pipeline combining `DIAMOND` and `MEGAN`, and was performed according to [@bagciDIAMONDMEGANFastEasy2021].  
 *Note that the performance of `DIAMOND` can be improved when running on a large memory node on an HPC as follows:*
 
 > on a compute server with high amount of RAM, it is useful to set `-b` to a higher number and `-c` to a lower number (e.g., `-b 12 -c 1`). Additionally, the parameter `-t` sets the directory where DIAMOND writes temporary files. If the server on which `DIAMOND` is run has a virtual filesystem, such as `TMPDIR`, setting the temporary directory for `DIAMOND` to this filesystem will also make it perform significantly better, as the IO operations will not be limited by slow network filesystems (e.g., `-t $TMPDIR`). Please see http://www.diamondsearch.org for more details.
@@ -1106,9 +1155,21 @@ blobtools host
 
 ##### Taxonomic classification with MMseq2
 
+```{bash mmseq-tax-class}
+
+```
+
+#### Gene annotation
+
+Gene models were predicted using a combination of _ab-initio_ and evidence-based (homology to known proteins and transcripts from close species) approaches. These were implemented in the [nf-core/genomeannotator](https://nf-co.re/genomeannotator) and [funannotate](https://funannotate.readthedocs.io/en/latest/tutorials.html) pipelines.
+
+```{bash gene-prediction}
+
+```
+
 #### stLFR Assembly
 
-DNA sample from QX-infected oyster (NN_781) was sent to Murdoch University (Rajeev Varshney's team) for MGI single tube long fragment read (stLFR) sequencing [@wangEfficientUniqueCobarcoding2019a]. See this paper for a comparison of sequencing and assembly strategies, including Nanopore and stLFR [@zhangComparisonDifferentSequencing2021]. 
+DNA sample from QX-infected oyster (NN_781) was sent to the State Agricultural Biotechnology Centre ([SABC](https://www.murdoch.edu.au/research/sabc)) at Murdoch University (led by Prof. Rajeev Varshney) for single tube long fragment read (stLFR) sequencing on an MGI DNBSEQ-T7 [@wangEfficientUniqueCobarcoding2019a]. See this paper for a comparison of sequencing and assembly strategies, including Nanopore and stLFR [@zhangComparisonDifferentSequencing2021]. 
 The analysis was performed on QCIF Bunya HPC (see the [documentation](https://github.com/UQ-RCC/hpc-docs)). The raw stLFR reads need to be deconvulated based on the barcodes found in the reverse (R2) reads (a *whitelist* containing these barcodes can be found in the [stLFR_barcode_split repository](https://github.com/BGI-Qingdao/stLFR_barcode_split/blob/8a22b7f152b0f18a2d3db59733368cc4352cbc58/barcode_list.txt) or downloaded from [LRTK databases](https://drive.google.com/drive/folders/1XPW2avL_LZAt5yIh9tb35jZ5GfCSj7eQ)). Several pipelines have been developed to process such reads, as detailed below.
 
 
@@ -1131,7 +1192,8 @@ Another approach that may be more suitable for our scenario is implemented in pi
 
 * The [MetaSTHD Assembly Pipeline](https://github.com/sumoii/STLFRassembly) uses several tools, such as [MetaWRAP](https://github.com/bxlab/metaWRAP) [@uritskiyMetaWRAPFlexiblePipeline2018], [WENGAN](https://github.com/adigenova/wengan) [@digenovaEfficientHybridNovo2021] and [cloudSPAdes](https://github.com/ablab/spades/tree/cloudspades-paper)[@tolstoganovCloudSPAdesAssemblySynthetic2019] to perform this task.
 * [LRTK](https://github.com/ericcombiolab/LRTK) is a similar pipeline that seems much more complete and mature [@yangLRTKPlatformAgnostic2022].
-* [Athena_meta](https://github.com/abishara/athena_meta) is a linked-reads metagenomes assembly tool. It can be installed via `conda` or as a Docker container `abishara/athena-meta-flye-docker` [@bisharaHighqualityGenomeSequences2018].
+* [Athena_meta](https://github.com/abishara/athena_meta) is a linked-reads metagenomes assembly tool. It can be installed via `conda` or as a Docker container `abishara/athena-meta-flye-docker` [@bisharaHighqualityGenomeSequences2018].  
+* [MetaTrass](https://github.com/BGI-Qingdao/MetaTrass) is a linked-reads metagenomes assembly tool for the human gut microbiome [@qiMetaTrassHighqualityMetagenome2022] 
 
 ```{bash stlr-LRTK}
 CONDA_NAME=lrtk
