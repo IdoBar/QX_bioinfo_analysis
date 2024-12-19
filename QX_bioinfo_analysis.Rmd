@@ -1,7 +1,7 @@
 ---
 title: "Genome and Transcriptome analyses of _Marteilia sydneyi_"
 author: "Niki Nenadic and Ido Bar"
-date: "04 July 2023"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
 always_allow_html: yes
 output: 
     bookdown::html_document2:
