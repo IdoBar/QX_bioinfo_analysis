@@ -64,7 +64,7 @@ pacman::p_load(char = basename(fav_packages))
 
 ### Methods
 #### RNA extraction
-RNA was extracted from the digestive gland of 3 healthy Sydney Rock Oysters (SRO, _Saccostrea glomerata_) and 3 SRO infected with QX disease (as confirmed by PCR assay on DNA extracted from each tissue) using the Trizol method. The RNA was sent for Illumina paired-end sequencing, generating 150bp reads (Macrogen, Korea). 
+RNA was extracted from the digestive gland of 3 healthy Sydney Rock Oysters (SRO, _Saccostrea glomerata_) and 3 SRO infected with QX disease (as confirmed by PCR assay on DNA extracted from each tissue) using the Trizol method. The RNA was sent for sequencing on an Illumina NovaSeq 6000, generating 150 bp paired-end reads (Macrogen, Korea). 
 
 The reads were downloaded to the Griffith University High Performance Computing cluster 'Gowonda' and the University of Queensland High Performance Computing cluster 'Bunya' (access provided by The Queensland Cyber Infrastructure Foundation (QCIF)) for bioinformatics processing and analyses, following the guidelines by Harvard Informatics (see [link](https://github.com/harvardinformatics/TranscriptomeAssemblyTools)) . 
 These included error-correction with Rcorrector v1.5.0 [@songRcorrectorEfficientAccurate2015a] of the reads from each set (healthy SRO and QX-infected SRO) and removal of "unfixable" reads.
@@ -365,7 +365,7 @@ sbatch -a 1-$(cat $JOBNAME.resume.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-pe
 
 ##### Annotate chosen assemblies
 
-The assemblies were annotated with TransPi, using homology searches (NCBI BLAST, @buchfinkFastSensitiveProtein2015a and DIAMOND) against the Uniprot_Sprot protein database, as well as using HMM search against the Pfam database of protein families. In addition, signal peptides, ribosomal genes and transmembrane topology were predicted with SignalP, Rnammer and TMHMM, respectively.
+The assemblies were annotated with TransPi, using homology searches (NCBI BLAST, @buchfinkFastSensitiveProtein2015a and DIAMOND) against the Uniprot_Sprot protein database, as well as using HMM search against the Pfam database of protein families. In addition, signal peptides, ribosomal genes and transmembrane topology were predicted with SignalP v4.1 [@petersenSignalPDiscriminatingSignal2011], Rnammer and TMHMM [@kroghPredictingTransmembraneProtein2001], respectively [@emanuelssonLocatingProteinsCell2007].
 
 ```{bash transpi-annot}
 WORKDIR=/home/ibar/adna/Oyster_QX_Disease # Bunya
@@ -560,7 +560,7 @@ sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=
 
 ###### Functional annotation of predicted proteins with InterPro
 
-The predicted proteins in the transcriptomes were further annotated using InterProScan (or [FA-nf](https://github.com/guigolab/FA-nf)) to assign protein families, motifs and ontologies to assist with transcript-to-gene annotation.
+The predicted proteins in the transcriptomes were further annotated using InterProScan v5.66-98.0 (or [FA-nf](https://github.com/guigolab/FA-nf)) to assign protein families, motifs and ontologies to assist with transcript-to-gene annotation.
 Notice the issues mentioned above with SignalP and TMHMM and a new one for Phobius (see discussions and solutions on [GitHub](https://github.com/nextgenusfs/funannotate/issues/696#issuecomment-1057663190) and [BioStar](https://www.biostars.org/p/238642/))
 
 ```{bash prot-annotation}

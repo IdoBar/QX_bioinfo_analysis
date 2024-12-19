@@ -2995,7 +2995,7 @@ border-radius: 0px;
 <h3>Methods</h3>
 <div id="rna-extraction" class="section level4">
 <h4>RNA extraction</h4>
-<p>RNA was extracted from the digestive gland of 3 healthy Sydney Rock Oysters (SRO, <em>Saccostrea glomerata</em>) and 3 SRO infected with QX disease (as confirmed by PCR assay on DNA extracted from each tissue) using the Trizol method. The RNA was sent for Illumina paired-end sequencing, generating 150bp reads (Macrogen, Korea).</p>
+<p>RNA was extracted from the digestive gland of 3 healthy Sydney Rock Oysters (SRO, <em>Saccostrea glomerata</em>) and 3 SRO infected with QX disease (as confirmed by PCR assay on DNA extracted from each tissue) using the Trizol method. The RNA was sent for sequencing on an Illumina NovaSeq 6000, generating 150 bp paired-end reads (Macrogen, Korea).</p>
 <p>The reads were downloaded to the Griffith University High Performance Computing cluster ‘Gowonda’ and the University of Queensland High Performance Computing cluster ‘Bunya’ (access provided by The Queensland Cyber Infrastructure Foundation (QCIF)) for bioinformatics processing and analyses, following the guidelines by Harvard Informatics (see <a href="https://github.com/harvardinformatics/TranscriptomeAssemblyTools">link</a>) .
 These included error-correction with Rcorrector v1.5.0 <span class="citation">(Song and Florea 2015)</span> of the reads from each set (healthy SRO and QX-infected SRO) and removal of “unfixable” reads.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># setup environment</span></span>
@@ -3292,7 +3292,7 @@ These included error-correction with Rcorrector v1.5.0 <span class="citation">(S
 </div>
 <div id="annotate-chosen-assemblies" class="section level5">
 <h5>Annotate chosen assemblies</h5>
-<p>The assemblies were annotated with TransPi, using homology searches (NCBI BLAST, <span class="citation">Buchfink <em>et al.</em> (2015)</span> and DIAMOND) against the Uniprot_Sprot protein database, as well as using HMM search against the Pfam database of protein families. In addition, signal peptides, ribosomal genes and transmembrane topology were predicted with SignalP, Rnammer and TMHMM, respectively.</p>
+<p>The assemblies were annotated with TransPi, using homology searches (NCBI BLAST, <span class="citation">Buchfink <em>et al.</em> (2015)</span> and DIAMOND) against the Uniprot_Sprot protein database, as well as using HMM search against the Pfam database of protein families. In addition, signal peptides, ribosomal genes and transmembrane topology were predicted with SignalP v4.1 <span class="citation">(Petersen <em>et al.</em> 2011)</span>, Rnammer and TMHMM <span class="citation">(Krogh <em>et al.</em> 2001)</span>, respectively <span class="citation">(Emanuelsson <em>et al.</em> 2007)</span>.</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="va">WORKDIR</span><span class="op">=</span>/home/ibar/adna/Oyster_QX_Disease <span class="co"># Bunya</span></span>
 <span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/Annotation/onlyAnn</span>
 <span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="fu">ln</span> <span class="at">-s</span> <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/results/assemblies/<span class="pp">*</span>Trinity.fa <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/Annotation/onlyAnn/</span>
@@ -3465,7 +3465,7 @@ These included error-correction with Rcorrector v1.5.0 <span class="citation">(S
 </div>
 <div id="functional-annotation-of-predicted-proteins-with-interpro" class="section level6">
 <h6>Functional annotation of predicted proteins with InterPro</h6>
-<p>The predicted proteins in the transcriptomes were further annotated using InterProScan (or <a href="https://github.com/guigolab/FA-nf">FA-nf</a>) to assign protein families, motifs and ontologies to assist with transcript-to-gene annotation.
+<p>The predicted proteins in the transcriptomes were further annotated using InterProScan v5.66-98.0 (or <a href="https://github.com/guigolab/FA-nf">FA-nf</a>) to assign protein families, motifs and ontologies to assist with transcript-to-gene annotation.
 Notice the issues mentioned above with SignalP and TMHMM and a new one for Phobius (see discussions and solutions on <a href="https://github.com/nextgenusfs/funannotate/issues/696#issuecomment-1057663190">GitHub</a> and <a href="https://www.biostars.org/p/238642/">BioStar</a>)</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="bu">cd</span> ~/adna/tools</span>
 <span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="ex">start_interactive_job</span> <span class="co"># start an interactive job to download interproscan</span></span>
@@ -3663,7 +3663,7 @@ Notice the issues mentioned above with SignalP and TMHMM and a new one for Phobi
 </div>
 <div id="general-information" class="section level2">
 <h2>General information</h2>
-<p>This document was last updated at 2024-12-19 10:59:27 using R Markdown (built with R version 4.2.1 (2022-06-23 ucrt)). Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. It is especially powerful at authoring documents and reports which include code and can execute code and use the results in the output. For more details on using R Markdown see <a href="http://rmarkdown.rstudio.com" class="uri">http://rmarkdown.rstudio.com</a> and <a href="https://www.rstudio.com/wp-content/uploads/2016/03/rmarkdown-cheatsheet-2.0.pdf">Rmarkdown cheatsheet</a>.</p>
+<p>This document was last updated at 2024-12-19 11:27:54 using R Markdown (built with R version 4.2.1 (2022-06-23 ucrt)). Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. It is especially powerful at authoring documents and reports which include code and can execute code and use the results in the output. For more details on using R Markdown see <a href="http://rmarkdown.rstudio.com" class="uri">http://rmarkdown.rstudio.com</a> and <a href="https://www.rstudio.com/wp-content/uploads/2016/03/rmarkdown-cheatsheet-2.0.pdf">Rmarkdown cheatsheet</a>.</p>
 <hr />
 </div>
 <div id="bibliography" class="section level2 unnumbered">
@@ -3681,11 +3681,17 @@ Bushmanova E, Antipov D, Lapidus A, et al. (2016) <span class="nocase">rnaQUAST<
 <div id="ref-chenFastpUltrafastAllone2018" class="csl-entry">
 Chen S, Zhou Y, Chen Y, Gu J (2018) Fastp: An ultra-fast all-in-one <span>FASTQ</span> preprocessor. Bioinformatics 34:i884–i890. doi: <a href="https://doi.org/10.1093/bioinformatics/bty560">10.1093/bioinformatics/bty560</a>
 </div>
+<div id="ref-emanuelssonLocatingProteinsCell2007" class="csl-entry">
+Emanuelsson O, Brunak S, von Heijne G, Nielsen H (2007) Locating proteins in the cell using <span>TargetP</span>, <span>SignalP</span> and related tools. Nat Protocols 2:953–971. doi: <a href="https://doi.org/10.1038/nprot.2007.131">10.1038/nprot.2007.131</a>
+</div>
 <div id="ref-haznedarogluOptimizationNovoTranscriptome2012" class="csl-entry">
 Haznedaroglu BZ, Reeves D, Rismani-Yazdi H, Peccia J (2012) Optimization of de novo transcriptome assembly from high-throughput short read sequencing data improves functional annotation for non-model organisms. BMC Bioinformatics 13:170. doi: <a href="https://doi.org/10.1186/1471-2105-13-170">10.1186/1471-2105-13-170</a>
 </div>
 <div id="ref-holzerNovoTranscriptomeAssembly2019" class="csl-entry">
 Hölzer M, Marz M (2019) De novo transcriptome assembly: <span>A</span> comprehensive cross-species comparison of short-read <span>RNA-Seq</span> assemblers. Gigascience 8:giz039. doi: <a href="https://doi.org/10.1093/gigascience/giz039">10.1093/gigascience/giz039</a>
+</div>
+<div id="ref-kroghPredictingTransmembraneProtein2001" class="csl-entry">
+Krogh A, Larsson B, Heijne G von, Sonnhammer ELL (2001) Predicting transmembrane protein topology with a hidden markov model: Application to complete genomes. Journal of Molecular Biology 305:567–580. doi: <a href="https://doi.org/10.1006/jmbi.2000.4315">10.1006/jmbi.2000.4315</a>
 </div>
 <div id="ref-liEvaluationNovoTranscriptome2014b" class="csl-entry">
 Li B, Fillmore N, Bai Y, et al. (2014) Evaluation of de novo transcriptome assemblies from <span>RNA-Seq</span> data. Genome Biol 15:553. doi: <a href="https://doi.org/10.1186/s13059-014-0553-5">10.1186/s13059-014-0553-5</a>
@@ -3701,6 +3707,9 @@ Patro R, Duggal G, Love MI, et al. (2017) Salmon provides fast and bias-aware qu
 </div>
 <div id="ref-penalozaChromosomelevelGenomeAssembly2021" class="csl-entry">
 Peñaloza C, Gutierrez AP, Eöry L, et al. (2021) A chromosome-level genome assembly for the <span>Pacific</span> oyster <span><em>Crassostrea gigas</em></span>. GigaScience 10:giab020. doi: <a href="https://doi.org/10.1093/gigascience/giab020">10.1093/gigascience/giab020</a>
+</div>
+<div id="ref-petersenSignalPDiscriminatingSignal2011" class="csl-entry">
+Petersen TN, Brunak S, Heijne G von, Nielsen H (2011) SignalP 4.0: Discriminating signal peptides from transmembrane regions. Nat Meth 8:785–786. doi: <a href="https://doi.org/10.1038/nmeth.1701">10.1038/nmeth.1701</a>
 </div>
 <div id="ref-quastSILVARibosomalRNA2012" class="csl-entry">
 Quast C, Pruesse E, Yilmaz P, et al. (2012) The <span>SILVA</span> ribosomal <span>RNA</span> gene database project: Improved data processing and web-based tools. Nucleic Acids Res 41:D590–D596. doi: <a href="https://doi.org/10.1093/nar/gks1219">10.1093/nar/gks1219</a>
