@@ -108,14 +108,14 @@ cd QX_RNA-Seq/data && mkdir corrected_reads
 
 # Run Rcorrect on Control samples
 mkdir corrected_reads
-R1_FILES_CON=$(seq 1 3 | parallel -k echo "NN01-56{}_1.fastq.gz" | gawk -vORS="," '1' | sed 's/,$//')
-R2_FILES_CON=$(seq 1 3 | parallel -k echo "NN01-56{}_2.fastq.gz" | gawk -vORS="," '1' | sed 's/,$//')
+R1_FILES_CON=$(seq 1 3 | parallel -k echo "NN01-56{}_1.fastq.gz" | paste -sd,)
+R2_FILES_CON=$(seq 1 3 | parallel -k echo "NN01-56{}_2.fastq.gz" | paste -sd,)
 # submit job
 echo "source ~/.bashrc; conda activate $CONDA_NAME; cd $PWD; set -Eeo pipefail; run_rcorrector.pl -1 $R1_FILES_CON -2 $R2_FILES_CON -t \$NCPUS -od corrected_reads" | qsub -l select=1:ncpus=12:mem=48gb,walltime=50:00:00 -N rcorr_sro_control -q bigmem  
 
 # combine and correct QX-infected samples
-R1_FILES_QX=$(printf "67\n79\n80\n" | parallel -k echo "NN01-5{}_1.fastq.gz" | gawk -vORS="," '1' | sed 's/,$//')
-R2_FILES_QX=$(printf "67\n79\n80\n" | parallel -k echo "NN01-5{}_2.fastq.gz" | gawk -vORS="," '1' | sed 's/,$//')
+R1_FILES_QX=$(printf "67\n79\n80\n" | parallel -k echo "NN01-5{}_1.fastq.gz" | paste -sd,)
+R2_FILES_QX=$(printf "67\n79\n80\n" | parallel -k echo "NN01-5{}_2.fastq.gz" | paste -sd,)
 # submit job
 echo "source ~/.bashrc; conda activate $CONDA_NAME; cd $PWD; set -Eeo pipefail; run_rcorrector.pl -1 $R1_FILES_QX -2 $R2_FILES_QX -t \$NCPUS -od corrected_reads" | qsub -l select=1:ncpus=12:mem=48gb,walltime=50:00:00 -N rcorr_sro_qx -q bigmem 
 
@@ -575,9 +575,9 @@ aria2c -x 6 -c $DATA_URL && \
  aria2c -c $DATA_URL.md5 && \
  md5sum -c ${IPRO_DATA}.md5 && pigz -dc $IPRO_DATA | tar xf -
 # download the interproscan container
-apptainer pull docker://index.docker.io/interpro/interproscan:${IPSCAN_VERSION}
+apptainer pull docker://index.docker.io/interpro/interproscan:${IPSCAN_VERSION} --dir $NXF_APPTAINER_CACHEDIR
 # create a link in SINGULARITY_CACHEDIR
-ln -s interproscan_${IPSCAN_VERSION}.sif ~/adna/.singularity/cache/
+ln -s interproscan_${IPSCAN_VERSION}.sif $NXF_APPTAINER_CACHEDIR/
 
 # download the FA-nf pipeline
 git clone --recursive https://github.com/guigolab/FA-nf
@@ -640,7 +640,7 @@ The transcripts were compared to the Pacific Oyster (*Crassostrea gigas*) protei
 ```{bash eval-assembly}
 CONDA_NAME=rnaseq
 mamba create -n $CONDA_NAME transrate ncbi-datasets-cli detonate
-WORKDIR=/home/ibar/adna/Oyster_QX_Disease
+WORKDIR='/home/ibar/adna/Oyster_QX_Disease'
 conda activate $CONDA_NAME
 
 mkdir -p $WORKDIR/references && cd $WORKDIR/references
@@ -654,8 +654,7 @@ wget https://github.com/macmanes-lab/Oyster_River_Protocol/raw/master/software/o
 tar xzf orp-transrate.tar.gz
 
 # or install the ORP container
-cd $NXF_APPTAINER_CACHEDIR
-apptainer pull docker://macmaneslab/orp:latest
+apptainer pull docker://macmaneslab/orp:2.3.3 --dir $NXF_APPTAINER_CACHEDIR
 
 cd $WORKDIR/SRO_TransPi_assembly/
 
@@ -686,6 +685,42 @@ sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=
 
 
 ```
+
+### SRO transcriptome assembly with ORP
+The SRO transcriptome of non-infected (control) tissues was also assembled with the Oyster River Protocol pipeline [@macmanesOysterRiverProtocol2018a].
+
+```{bash orp-assembly}
+# prepare slurm script
+WORKDIR='/scratch/project/adna/Oyster_QX_Disease'
+JOBNAME="SRO_orp_pipeline"
+NCORES=24
+MEM=150
+WALLTIME=200:00:00
+mkdir -p $WORKDIR/$JOBNAME && cd $WORKDIR/$JOBNAME
+
+echo '#!/bin/bash --login'"
+#SBATCH --job-name=$JOBNAME
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --output=%x.%j.log
+#SBATCH --cpus-per-task=$NCORES
+#SBATCH --mem=${MEM}G
+#SBATCH --time=$WALLTIME
+#SBATCH --account=a_agri_genomics
+#SBATCH --partition=general
+
+source ~/.bashrc
+set -Eeo pipefail
+cd \$SLURM_SUBMIT_DIR
+
+apptainer exec -B $WORKDIR:/scratch --no-mount /home $NXF_APPTAINER_CACHEDIR/docker.io-macmaneslab-orp-2.3.3.img bash -c \"source /home/orp/Oyster_River_Protocol/software/anaconda/install/bin/activate orp && unset -f which && cd /scratch/$JOBNAME && /home/orp/Oyster_River_Protocol/oyster.mk TPM_FILT=1 CPU=\$SLURM_CPUS_PER_TASK MEM=$MEM  READ1=/scratch/SRO_TransPi_assembly/input_files/unfixrm_SRO_control_R1.cor.fastq.gz READ2=/scratch/SRO_TransPi_assembly/input_files/unfixrm_SRO_control_R2.cor.fastq.gz RUNOUT=SRO_trans_orp\" " >  $JOBNAME.slurm
+
+# submit the job
+sbatch $JOBNAME.slurm
+
+
+```
+
 
 #### Gene Expression Analysis
 
@@ -958,7 +993,7 @@ In addition, it would be great to have a reference genome of a closely related s
 
 ##### Comparison to Ascetosporean genomes
 
-The assembled contigs were aligned to the newly published genomes of several Ascetosporea protists (including _Marteilia pararefringens_), see [NCBI Bioproject PRJNA1051017](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1051017) using [nf-core/pairgenomealign](https://nf-co.re/pairgenomealign/1.1.0/) v1.1.0 and `mummer` [@marcaisMUMmer4FastVersatile2018].  
+The assembled contigs were aligned to the newly published genomes of several Ascetosporea protists (including _Marteilia pararefringens_, see [NCBI Bioproject PRJNA1051017](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1051017); @hiltunenthorenComparativeGenomicsAscetosporea2024) using [nf-core/pairgenomealign](https://nf-co.re/pairgenomealign/1.1.0/) v1.1.0 and `mummer` [@marcaisMUMmer4FastVersatile2018].  
 
 ```{bash pairgenomealign}
 # download Flye assembly from research space.
@@ -1001,7 +1036,38 @@ find $WORK_DIR/ncbi_dataset/data -name "*genomic.fna" | parallel --dry-run --rpl
 
 ```
 
-It would be useful to plot the contig matches between the 2 genomes (synteny plots)
+The contig **matches** between the 2 genomes (synteny plots), were plotted with [SYNY](https://github.com/PombertLab/SYNY) v1.2 [@julianSYNYPipelineInvestigate2024].
+
+```{bash syny}
+CONDA_NAME="syny"
+mamba create -n $CONDA_NAME syny perl-gd
+ln -s /home/ibar/miniconda3/envs/syny/lib/perl5/site_perl/5.22.0/x86_64-linux/GD $CONDA_PREFIX/lib/perl5/site_perl/
+conda activate syny
+NCORES=8
+MEM=16
+WALLTIME=1:00:00
+WORKDIR=$HOME/adna/Oyster_QX_Disease/Comparative_Genomics # on Bunya
+mkdir -p $WORKDIR && cd $WORKDIR
+QUERY="$HOME/adna/Oyster_QX_Disease/Nanopore_sequencing/SRO_781/Galaxy_analysis/Galaxy_Flye_assembly.fasta"
+fasta_to_gbff.pl -v -f $QUERY -g -o ./
+# run SYNY
+JOB_NAME="Ascetosporea_SYNY"
+find $WORKDIR/ncbi_dataset/data -name "*genomic.fna" | parallel --dry-run --rpl "{target} s:.+/GCA_.+\.1_UU_(.+)_1_genomic.fna:\1:" "fasta_to_gbff.pl -v -f {} -g -o Msyd_{target}_SYNY; ln -s $WORKDIR/Galaxy_Flye_assembly.gbff.gz Msyd_{target}_SYNY/; run_syny.pl -a Msyd_{target}_SYNY/*.gbff.gz -o Msyd_{target}_SYNY -t \$SLURM_CPUS_PER_TASK -e 1e-10" > $JOB_NAME.cmds
+ 
+# submit the job array to the cluster
+sbatch -a 1-$(cat $JOB_NAME.cmds | wc -l) --job-name=$JOB_NAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOB_NAME.cmds,CONDA_NAME=$CONDA_NAME ${WORKDIR}/../array.slurm
+
+# focus on matching contigs only (after alignment of the genomes with Minimap2 within SYNY)
+start_interactive_job
+conda activate syny
+WORKDIR=$HOME/adna/Oyster_QX_Disease/Comparative_Genomics # on Bunya
+mkdir -p $WORKDIR && cd $WORKDIR
+cut -f1 Msyd_MPar_SYNY/ALIGNMENTS/PAF/GCA_039583845_vs_Galaxy_Flye_assembly.mmap.paf | uniq > Msyd_Mpar_shared_contigs.txt
+cut -f6 Msyd_MPar_SYNY/ALIGNMENTS/PAF/GCA_039583845_vs_Galaxy_Flye_assembly.mmap.paf | uniq >> Msyd_Mpar_shared_contigs.txt
+
+run_syny.pl -a Msyd_MPar_SYNY/*.gbff.gz -o Msyd_MPar_subset_SYNY --include Msyd_Mpar_shared_contigs.txt -t $SLURM_CPUS_PER_TASK -e 1e-10
+
+```
 
 ##### Contig annotation and taxonomic classification
 
@@ -1163,9 +1229,207 @@ blobtools host
 
 Gene models were predicted using a combination of _ab-initio_ and evidence-based (homology to known proteins and transcripts from close species) approaches. These were implemented in the [nf-core/genomeannotator](https://nf-co.re/genomeannotator) and [funannotate](https://funannotate.readthedocs.io/en/latest/tutorials.html) pipelines.
 
-```{bash gene-prediction}
+
+```{bash prep-qx-trans}
+CONDA_NAME=genomics
+mamba install -n $CONDA_NAME how_are_we_stranded_here
+# Prepare QX transcriptome to train gene models
+RNASEQ_DIR="/scratch/project/adna/Oyster_QX_Disease/QX_RNA-Seq"
+# download QX Trinity transcriptome assembly from Research Space
+cd $RNASEQ_DIR
+rclone copyto -P GURS_shared:Oyster_QX_Disease/QX_RNA-Seq/QX_TransPi_assembly/assemblies/NN01-QX_R.Trinity.fa $RNASEQ_DIR/NN01-QX_R.Trinity.fa
+# download RNA-seq reads
+rclone copy -P GURS_shared:Oyster_QX_Disease/QX_RNA-Seq/data/unaligned_reads $RNASEQ_DIR/data/unaligned_reads
+# Make a GTF file from transcriptome
+$(find $HOME/etc/tools -name "cdna_fasta_file_to_transcript_gtf.pl") $RNASEQ_DIR/NN01-QX_R.Trinity.fa > $RNASEQ_DIR/NN01-QX_R.Trinity.gtf
+# clean headers in assembly
+reformat.sh in=NN01-QX_R.Trinity.fa out=NN01-QX_R.Trinity.trimmed_headers.fa trd=t
+# check strandness with how_are_we_stranded_here script 
+check_strandedness --gtf $RNASEQ_DIR/NN01-QX_R.Trinity.gtf --transcripts $HOME/adna/Oyster_QX_Disease/QX_RNA-Seq/NN01-QX_R.Trinity.trimmed_headers.fa --reads_1 $RNASEQ_DIR/data/unaligned_reads/NN01-567_unaligned_reads_R1.fastq.gz --reads_2 $RNASEQ_DIR/data/unaligned_reads/NN01-567_unaligned_reads_R2.fastq.gz
+
+
+# check strandness with script from ORP (must be run within an interctive job on a compute node)
+apptainer exec -B $RNASEQ_DIR:/scratch --no-mount /home $NXF_APPTAINER_CACHEDIR/docker.io-macmaneslab-orp-2.3.3.img bash -c "source /home/orp/Oyster_River_Protocol/software/anaconda/install/bin/activate orp_trinity && unset -f which && cd /scratch && sed -r 's|MAKEDIR :=.+|MAKEDIR := /home/orp/Oyster_River_Protocol|; s|MAKEDIR}version|MAKEDIR}/version|' /home/orp/Oyster_River_Protocol/strandeval.mk > ./strandeval.mk && chmod +x ./strandeval.mk &&  ./strandeval.mk main ASSEMBLY=./NN01-QX_R.Trinity.trimmed_headers.fa CPU=$SLURM_CPUS_PER_TASK READ1=./data/unaligned_reads/NN01-567_unaligned_reads_R1.fastq.gz READ2=./data/unaligned_reads/NN01-567_unaligned_reads_R2.fastq.gz RUNOUT=NN01-QX" 
+
+# check strandess of SRO assembly
+JOBNAME="check-strandness-SRO-TransPi"
+NCORES=8
+MEM=24
+WALLTIME=2:00:00
+SRO_RNASEQ_DIR="/scratch/project/adna/Oyster_QX_Disease/SRO_TransPi_assembly"
+cd $SRO_RNASEQ_DIR
+# copy fastq files from Research Space
+rclone copyto -P GURS_shared:Oyster_QX_Disease/QX_RNA-Seq/data/corrected_reads/unfixrm_SRO_control_R1.cor.fastq.gz $SRO_RNASEQ_DIR/input_files/unfixrm_SRO_control_R1.cor.fastq.gz
+rclone copyto -P GURS_shared:Oyster_QX_Disease/QX_RNA-Seq/data/corrected_reads/unfixrm_SRO_control_R2.cor.fastq.gz $SRO_RNASEQ_DIR/input_files/unfixrm_SRO_control_R2.cor.fastq.gz
+
+
+find ./results/assemblies -name "*.Trinity.fa" | parallel --dry-run --rpl "{ass} s:.+/(.+).Trinity.fa:\1:" "apptainer exec -B $SRO_RNASEQ_DIR:/scratch --no-mount /home $NXF_APPTAINER_CACHEDIR/docker.io-macmaneslab-orp-2.3.3.img bash -c \"source /home/orp/Oyster_River_Protocol/software/anaconda/install/bin/activate orp_trinity && unset -f which && cd /scratch && sed -r 's|MAKEDIR :=.+|MAKEDIR := /home/orp/Oyster_River_Protocol|; s|MAKEDIR}version|MAKEDIR}/version|' /home/orp/Oyster_River_Protocol/strandeval.mk > ./strandeval.mk && chmod +x ./strandeval.mk &&  ./strandeval.mk main ASSEMBLY={} CPU=\$SLURM_CPUS_PER_TASK READ1=./input_files/unfixrm_SRO_control_R1.cor.fastq.gz READ2=./input_files/unfixrm_SRO_control_R2.cor.fastq.gz RUNOUT={/.}_orp_strandness\" " >  $JOBNAME.cmds
+
+
+
+# submit the job array to the cluster
+sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WALLTIME --export=ALL,PATH=$PATH,CMDS_FILE=$JOBNAME.cmds,CONDA_NAME=base ~/bin/array.slurm
+
 
 ```
+
+**Looks like we didn't assemble the reads properly!!**
+Need to redo that in a strand-specific (RF) manner
+
+
+```{bash funannotate-setup}
+# either use conda environment or a container
+CONDA_NAME="funannotate"
+mamba create -n funannotate funannotate distro eggnog-mapper 
+
+
+# download the interproscan container
+apptainer pull docker://index.docker.io/nextgenusfs/funannotate:latest --dir $NXF_APPTAINER_CACHEDIR
+
+# download GeneMark ES/ET (need to request a licence at http://topaz.gatech.edu/GeneMark/license_download.cg
+cd ~/adna/etc/tools/Annotation
+aria2c -x5 http://topaz.gatech.edu/GeneMark/tmp/GMtool_RlyKF/gmes_linux_64_4.tar.gz && tar xzfv gmes_linux_64_4.tar.gz && cd gmes_linux_64_4
+wget http://topaz.gatech.edu/GeneMark/tmp/GMtool_RlyKF/gm_key_64.gz && gunzip gm_key_64.gz
+ln -s  ~/etc/tools/Annotation/gmes_linux_64_4/gm_key_64 ~/etc/tools/Annotation/gmes_linux_64_4/.gm_key
+# fix all perl scripts
+find /home/ibar/etc/tools/Annotation/gmes_linux_64_4 -name "*.pl" | parallel "sed -ri.bak 's|/usr/bin/perl|/usr/bin/env perl|' {}"
+
+# start and interactive job to test funannotate
+start_interactive_job
+CONDA_NAME="funannotate"
+conda activate $CONDA_NAME
+# export environment variable for gmes_petap.pl location
+export GENEMARK_PATH=$(find $HOME/etc/tools/Annotation -name "gmes_petap.pl" | xargs dirname)
+# add signalp to the bin or PATH (must be installed manually)
+ln -s ~/scratch/tools/signalp-4.1/signalp ~/bin/
+# download eggNOG data
+export EGGNOG_DATA_DIR=$HOME/aDNA/tools/eggnog_dbs && mkdir -p $EGGNOG_DATA_DIR
+download_eggnog_data.py
+#set ENV variable for $FUNANNOTATE_DB
+export FUNANNOTATE_DB=$HOME/aDNA/tools/funannotate_db
+mkdir -p $FUNANNOTATE_DB
+# make sure this environment variable is setup every time the environment is activated
+echo "export FUNANNOTATE_DB=$HOME/aDNA/tools/funannotate_db" > $CONDA_PREFIX/etc/conda/activate.d/funannotate.sh
+echo "export GENEMARK_PATH=$(find $HOME/etc/tools/Annotation -name "gmes_petap.pl" | xargs dirname)" >> $CONDA_PREFIX/etc/conda/activate.d/funannotate.sh
+echo "export PATH=$PATH:\$GENEMARK_PATH" >> $CONDA_PREFIX/etc/conda/activate.d/funannotate.sh
+echo "export EGGNOG_DATA_DIR=$HOME/aDNA/tools/eggnog_dbs" >> $CONDA_PREFIX/etc/conda/activate.d/funannotate.sh
+echo "unset FUNANNOTATE_DB" > $CONDA_PREFIX/etc/conda/deactivate.d/funannotate.sh
+echo "unset GENEMARK_PATH" >> $CONDA_PREFIX/etc/conda/deactivate.d/funannotate.sh
+# reactivate environment
+conda deactivate && conda activate $CONDA_NAME
+#check that all modules are installed
+
+funannotate check --show-versions
+
+#download/setup databases to a writable/readable location
+funannotate setup -d $FUNANNOTATE_DB
+
+#run tests -- requires internet connection to download data
+funannotate test -t all --cpus $SLURM_CPUS_PER_TASK
+
+```
+
+Now we can finally run the pipeline...
+
+```{bash funannotate}
+CONDA_NAME="funannotate"
+GENOME="$HOME/adna/Oyster_QX_Disease/Nanopore_sequencing/SRO_781/Galaxy_analysis/Galaxy_Flye_assembly.fasta"
+GENOME_BASENAME=$(basename -s .fasta $GENOME)
+RNASEQ_DIR="$HOME/adna/Oyster_QX_Disease/QX_RNA-Seq"
+export FUNANNOTATE_DB=$HOME/aDNA/tools/funannotate_db
+# download Mpar proteins
+aria2c -x5 -d $HOME/adna/Oyster_QX_Disease/Comparative_Genomics https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/039/583/845/GCA_039583845.1_UU_MPar_1/GCA_039583845.1_UU_MPar_1_protein.faa.gz && gunzip $HOME/adna/Oyster_QX_Disease/Comparative_Genomics/ GCA_039583845.1_UU_MPar_1_protein.faa.gz
+# setup working directory
+WORKDIR=/scratch/project/adna/Oyster_QX_Disease/QX_genome_annotation
+mkdir -p $WORKDIR && cd $WORKDIR
+
+NCPUS=16
+MEM=64
+WALLTIME="10:00:00"
+JOB_NAME=funannotate-prep
+echo '#!/bin/bash --login
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --output=%x.%j.log'"
+#SBATCH --job-name=$JOB_NAME
+#SBATCH --cpus-per-task=$NCPUS
+#SBATCH --mem=${MEM}G
+#SBATCH --time=$WALLTIME
+#SBATCH --account=a_agri_genomics
+#SBATCH --partition=general
+
+source ~/.bashrc
+conda activate $CONDA_NAME
+set -Eeo pipefail
+cd \$SLURM_SUBMIT_DIR
+
+# clean headers (not needed in our case)
+# funannotate clean -i $GENOME --minlen 1000 -o $GENOME_BASENAME.cleaned.fa
+# sort contigs (not needed in our case)
+funannotate sort -i $GENOME --minlen 1000 -b contig -o $GENOME_BASENAME.cleaned.sorted.fa
+# mask repetitive regions
+funannotate mask -i $GENOME_BASENAME.cleaned.sorted.fa --cpus \$SLURM_CPUS_PER_TASK -o $GENOME_BASENAME.cleaned.sorted.masked.fa" > $JOB_NAME.slurm
+# submit to the cluster
+sbatch $JOB_NAME.slurm
+
+NCPUS=16
+MEM=250
+WALLTIME="100:00:00"
+JOB_NAME=funannotate-train
+echo '#!/bin/bash --login
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --output=%x.%j.log'"
+#SBATCH --job-name=$JOB_NAME
+#SBATCH --cpus-per-task=$NCPUS
+#SBATCH --mem=${MEM}G
+#SBATCH --time=$WALLTIME
+#SBATCH --account=a_agri_genomics
+#SBATCH --partition=general
+
+source ~/.bashrc
+conda activate $CONDA_NAME
+set -Eeo pipefail
+cd \$SLURM_SUBMIT_DIR
+# train gene models based on RNA-Seq data
+funannotate train -i $GENOME_BASENAME.cleaned.sorted.masked.fa -o fun --left $RNASEQ_DIR/data/unaligned_reads/NN01-567_unaligned_reads_R1.fastq.gz $RNASEQ_DIR/data/unaligned_reads/NN01-579_unaligned_reads_R1.fastq.gz $RNASEQ_DIR/data/unaligned_reads/NN01-580_unaligned_reads_R1.fastq.gz --right $RNASEQ_DIR/data/unaligned_reads/NN01-567_unaligned_reads_R2.fastq.gz $RNASEQ_DIR/data/unaligned_reads/NN01-579_unaligned_reads_R2.fastq.gz $RNASEQ_DIR/Ndata/unaligned_reads/N01-580_unaligned_reads_R2.fastq.gz --stranded RF --species 'Marteilia sydneyi' --strain SRO_781 --cpus \$SLURM_CPUS_PER_TASK --max_intronlen 10000 --trinity $RNASEQ_DIR/NN01-QX_R.Trinity.trimmed_headers.fa"  > $JOB_NAME.slurm
+# submit to the cluster
+sbatch $JOB_NAME.slurm
+
+NCPUS=16
+MEM=128
+WALLTIME="50:00:00"
+JOB_NAME=funannotate-predict
+echo '#!/bin/bash --login
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --output=%x.%j.log'"
+#SBATCH --job-name=$JOB_NAME
+#SBATCH --cpus-per-task=$NCPUS
+#SBATCH --mem=${MEM}G
+#SBATCH --time=$WALLTIME
+#SBATCH --account=a_agri_genomics
+#SBATCH --partition=general
+
+source ~/.bashrc
+conda activate $CONDA_NAME
+set -Eeo pipefail
+cd \$SLURM_SUBMIT_DIR
+# predict gene models (optionally provide predicted proteins from M. para)
+funannotate predict -i $GENOME_BASENAME.cleaned.sorted.masked.fa -o fun --tmpdir /scratch/project/adna/tmp --species 'Marteilia sydneyi' --strain SRO_781 --cpus \$SLURM_CPUS_PER_TASK --organism other --ploidy 2 --max_intronlen 10000 --transcript_evidence $HOME/adna/Oyster_QX_Disease/QX_RNA-Seq/NN01-QX_R.Trinity.trimmed_headers.fa --protein_evidence $HOME/adna/Oyster_QX_Disease/Comparative_Genomics/GCA_039583845.1_UU_MPar_1_protein.faa $FUNANNOTATE_DB/uniprot_sprot.fasta
+
+# update gene predictions
+funannotate update -i fun --cpus \$SLURM_CPUS_PER_TASK" >  $JOB_NAME.slurm
+# submit to the cluster
+sbatch $JOB_NAME.slurm
+
+# functional annotation
+--busco_db protists
+
+
+```
+
+
 
 #### stLFR Assembly
 
