@@ -366,7 +366,7 @@ sbatch -a 1-$(cat $JOBNAME.resume.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-pe
 
 ##### Annotate chosen assemblies
 
-The assemblies were annotated with TransPi, using homology searches (Blast and Diamond) against the Uniprot_Sprot protein database, as well as using HMM search against the PFam database of protein families. In addition, signal peptides, ribosomal genes and transmembrane topology were predicted with SignalP, Rnammer and TMHMM, respectively.
+The assemblies were annotated with TransPi, using homology searches (BLAST and DIAMOND) against the Uniprot_Sprot protein database, as well as using HMM search against the PFam database of protein families. In addition, signal peptides, ribosomal genes and transmembrane topology were predicted with SignalP [@petersenSignalPDiscriminatingSignal2011], Rnammer and TMHMM [@kroghPredictingTransmembraneProtein2001], respectively [@emanuelssonLocatingProteinsCell2007].
 
 ```{bash transpi-annot}
 WORKDIR=/home/ibar/adna/Oyster_QX_Disease # Bunya
