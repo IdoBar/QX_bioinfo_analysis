@@ -3194,6 +3194,7 @@ These included error-correction with Rcorrector v1.5.0 <span class="citation">(S
 <code>sed -ri.bak &#39;s|SIGNALP} = &#39;\&#39;&#39;.+|SIGNALP} = &quot;\$FindBin::RealBin&quot;|; s/BEGIN/use FindBin\; \nBEGIN/; s/MAX_ALLOWED_ENTRIES=.+/MAX_ALLOWED_ENTRIES=2000000;/&#39; signalp</code></li>
 <li>Process <code>summary_custom_uniprot</code> fails because of weird table merging and file redundancies done in bash. I edited <code>Tranbspi/bin/custom_uniprot_hits.R</code> to perform these tasks and export the <code>csv</code> file with the results.</li>
 </ol>
+<p>A modified version of TransPi with these fixes is available at <a href="https://github.com/IdoBar/TransPi" class="uri">https://github.com/IdoBar/TransPi</a>.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># install TransPi</span></span>
 <span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="bu">cd</span> /home/ibar/adna/tools <span class="co">#Bunya</span></span>
 <span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/idobar/TransPi.git <span class="co"># my version</span></span>
@@ -3292,7 +3293,7 @@ These included error-correction with Rcorrector v1.5.0 <span class="citation">(S
 </div>
 <div id="annotate-chosen-assemblies" class="section level5">
 <h5>Annotate chosen assemblies</h5>
-<p>The assemblies were annotated with TransPi, using homology searches (NCBI BLAST, <span class="citation">Buchfink <em>et al.</em> (2015)</span> and DIAMOND) against the Uniprot_Sprot protein database, as well as using HMM search against the Pfam database of protein families. In addition, signal peptides, ribosomal genes and transmembrane topology were predicted with SignalP v4.1 <span class="citation">(Petersen <em>et al.</em> 2011)</span>, Rnammer and TMHMM <span class="citation">(Krogh <em>et al.</em> 2001)</span>, respectively <span class="citation">(Emanuelsson <em>et al.</em> 2007)</span>.</p>
+<p>The assemblies were annotated with TransPi, using homology searches (BLAST <span class="citation">Camacho <em>et al.</em> (2009)</span>, and DIAMOND <span class="citation">Buchfink <em>et al.</em> (2015)</span>) against the Uniprot_Sprot protein database, as well as using HMM search against the Pfam database of protein families. In addition, signal peptides, ribosomal genes and transmembrane topology were predicted with SignalP v4.1 <span class="citation">(Petersen <em>et al.</em> 2011)</span>, Rnammer and TMHMM <span class="citation">(Krogh <em>et al.</em> 2001)</span>, respectively <span class="citation">(Emanuelsson <em>et al.</em> 2007)</span>.</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="va">WORKDIR</span><span class="op">=</span>/home/ibar/adna/Oyster_QX_Disease <span class="co"># Bunya</span></span>
 <span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/Annotation/onlyAnn</span>
 <span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="fu">ln</span> <span class="at">-s</span> <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/results/assemblies/<span class="pp">*</span>Trinity.fa <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/Annotation/onlyAnn/</span>
@@ -3370,7 +3371,7 @@ These included error-correction with Rcorrector v1.5.0 <span class="citation">(S
 <span id="cb8-52"><a href="#cb8-52" tabindex="-1"></a></span>
 <span id="cb8-53"><a href="#cb8-53" tabindex="-1"></a><span class="co"># submit the job array to the cluster</span></span>
 <span id="cb8-54"><a href="#cb8-54" tabindex="-1"></a><span class="ex">sbatch</span> <span class="at">-a</span> 1-<span class="va">$(</span><span class="fu">cat</span> <span class="va">$JOBNAME</span>.cmds <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span><span class="va">)</span>%10 <span class="at">--job-name</span><span class="op">=</span><span class="va">$JOBNAME</span> <span class="at">--cpus-per-task</span><span class="op">=</span><span class="va">$NCORES</span> <span class="at">--mem</span><span class="op">=</span><span class="va">${MEM}</span>G <span class="at">--time</span><span class="op">=</span><span class="va">$WALLTIME</span> <span class="at">--export</span><span class="op">=</span>ALL,CMDS_FILE=<span class="va">$JOBNAME</span>.cmds,CONDA_NAME=<span class="va">$CONDA_NAME</span> <span class="at">--dependency</span><span class="op">=</span>afterok:8070286  <span class="va">${WORKDIR}</span>/array.slurm</span></code></pre></div>
-<p>Regular BLAST is just too slow (mainly on the protein level), so we used a Nextflow implementation of BLAST that breaks down the input transcriptome into “chunks” and processes them in parallel on the HPC cluster.</p>
+<p>Regular BLAST is just too slow (mainly on the protein level), so we used a Nextflow implementation of BLAST (v2.16.0) that breaks down the input transcriptome into “chunks” and processes them in parallel on the HPC cluster.</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="va">WORKDIR</span><span class="op">=</span>/home/ibar/adna/Oyster_QX_Disease</span>
 <span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="bu">cd</span> <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/Annotation</span>
 <span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="va">JOBNAME</span><span class="op">=</span>blastn_tax_nf</span>
@@ -3444,7 +3445,7 @@ These included error-correction with Rcorrector v1.5.0 <span class="citation">(S
 <span id="cb10-49"><a href="#cb10-49" tabindex="-1"></a><span class="co"># submit the job array to the cluster</span></span>
 <span id="cb10-50"><a href="#cb10-50" tabindex="-1"></a><span class="ex">sbatch</span> <span class="at">-a</span> 1-2,4 <span class="at">--job-name</span><span class="op">=</span><span class="va">$JOBNAME</span> <span class="at">--cpus-per-task</span><span class="op">=</span><span class="va">$NCORES</span> <span class="at">--mem</span><span class="op">=</span><span class="va">${MEM}</span>G <span class="at">--time</span><span class="op">=</span><span class="va">$WALLTIME</span> <span class="at">--export</span><span class="op">=</span>ALL,CMDS_FILE=<span class="va">$JOBNAME</span>.cmds,CONDA_NAME=base <span class="va">${WORKDIR}</span>/array.slurm</span>
 <span id="cb10-51"><a href="#cb10-51" tabindex="-1"></a><span class="co"># each job took roughly 3:30 hours</span></span></code></pre></div>
-<p>Using the Nextflow-enabled version of DIAMOND (reducing the time to 1.5h)</p>
+<p>Using <a href="https://github.com/IdoBar/nf-blast">nf-blast</a>, a Nextflow-enabled version of DIAMOND v2.1.9 (reducing the time to 1.5h)</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="ex">start_long_interactive_job</span> <span class="co"># start interactive job on Bunya</span></span>
 <span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="va">WORKDIR</span><span class="op">=</span>/home/ibar/adna/Oyster_QX_Disease</span>
 <span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="va">JOBNAME</span><span class="op">=</span>nf_diamond_blastp_tax</span>
@@ -3659,7 +3660,7 @@ Notice the issues mentioned above with SignalP and TMHMM and a new one for Phobi
 </div>
 <div id="general-information" class="section level2">
 <h2>General information</h2>
-<p>This document was last updated at 2025-01-06 12:20:32 using R Markdown (built with R version 4.2.1 (2022-06-23 ucrt)). Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. It is especially powerful at authoring documents and reports which include code and can execute code and use the results in the output. For more details on using R Markdown see <a href="http://rmarkdown.rstudio.com" class="uri">http://rmarkdown.rstudio.com</a> and <a href="https://www.rstudio.com/wp-content/uploads/2016/03/rmarkdown-cheatsheet-2.0.pdf">Rmarkdown cheatsheet</a>.</p>
+<p>This document was last updated at 2025-01-06 14:27:02 using R Markdown (built with R version 4.2.1 (2022-06-23 ucrt)). Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. It is especially powerful at authoring documents and reports which include code and can execute code and use the results in the output. For more details on using R Markdown see <a href="http://rmarkdown.rstudio.com" class="uri">http://rmarkdown.rstudio.com</a> and <a href="https://www.rstudio.com/wp-content/uploads/2016/03/rmarkdown-cheatsheet-2.0.pdf">Rmarkdown cheatsheet</a>.</p>
 <hr />
 </div>
 <div id="bibliography" class="section level2 unnumbered">
@@ -3673,6 +3674,9 @@ Buchfink B, Xie C, Huson DH (2015) Fast and sensitive protein alignment using <s
 </div>
 <div id="ref-bushmanovaRnaQUASTQualityAssessment2016" class="csl-entry">
 Bushmanova E, Antipov D, Lapidus A, et al. (2016) <span class="nocase">rnaQUAST</span>: A quality assessment tool for de novo transcriptome assemblies. Bioinformatics 32:2210–2212. doi: <a href="https://doi.org/10.1093/bioinformatics/btw218">10.1093/bioinformatics/btw218</a>
+</div>
+<div id="ref-camachoBLASTArchitectureApplications2009" class="csl-entry">
+Camacho C, Coulouris G, Avagyan V, et al. (2009) <span>BLAST</span>+: Architecture and applications. BMC Bioinformatics 10:421. doi: <a href="https://doi.org/10.1186/1471-2105-10-421">10.1186/1471-2105-10-421</a>
 </div>
 <div id="ref-chenFastpUltrafastAllone2018" class="csl-entry">
 Chen S, Zhou Y, Chen Y, Gu J (2018) Fastp: An ultra-fast all-in-one <span>FASTQ</span> preprocessor. Bioinformatics 34:i884–i890. doi: <a href="https://doi.org/10.1093/bioinformatics/bty560">10.1093/bioinformatics/bty560</a>

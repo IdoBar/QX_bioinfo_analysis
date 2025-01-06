@@ -255,6 +255,8 @@ TransPi needs to be installed and configured (download annotation databases and 
 \nBEGIN/; s/MAX_ALLOWED_ENTRIES=.+/MAX_ALLOWED_ENTRIES=2000000;/' signalp`
 8. Process `summary_custom_uniprot` fails because of weird table merging and file redundancies done in bash. I edited `Tranbspi/bin/custom_uniprot_hits.R` to perform these tasks and export the `csv` file with the results.  
 
+A modified version of TransPi with these fixes is available at <https://github.com/IdoBar/TransPi>.
+
 ```{bash setup-transpi}
 # install TransPi
 cd /home/ibar/adna/tools #Bunya
@@ -365,7 +367,7 @@ sbatch -a 1-$(cat $JOBNAME.resume.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-pe
 
 ##### Annotate chosen assemblies
 
-The assemblies were annotated with TransPi, using homology searches (NCBI BLAST, @buchfinkFastSensitiveProtein2015a and DIAMOND) against the Uniprot_Sprot protein database, as well as using HMM search against the Pfam database of protein families. In addition, signal peptides, ribosomal genes and transmembrane topology were predicted with SignalP v4.1 [@petersenSignalPDiscriminatingSignal2011], Rnammer and TMHMM [@kroghPredictingTransmembraneProtein2001], respectively [@emanuelssonLocatingProteinsCell2007].
+The assemblies were annotated with TransPi, using homology searches (BLAST @camachoBLASTArchitectureApplications2009, and DIAMOND @buchfinkFastSensitiveProtein2015a) against the Uniprot_Sprot protein database, as well as using HMM search against the Pfam database of protein families. In addition, signal peptides, ribosomal genes and transmembrane topology were predicted with SignalP v4.1 [@petersenSignalPDiscriminatingSignal2011], Rnammer and TMHMM [@kroghPredictingTransmembraneProtein2001], respectively [@emanuelssonLocatingProteinsCell2007].
 
 ```{bash transpi-annot}
 WORKDIR=/home/ibar/adna/Oyster_QX_Disease # Bunya
@@ -452,7 +454,7 @@ sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=
 
 ```
 
-Regular BLAST is just too slow (mainly on the protein level), so we used a Nextflow implementation of BLAST that breaks down the input transcriptome into "chunks" and processes them in parallel on the HPC cluster.
+Regular BLAST is just too slow (mainly on the protein level), so we used a Nextflow implementation of BLAST (v2.16.0) that breaks down the input transcriptome into "chunks" and processes them in parallel on the HPC cluster.
 
 ```{bash blast-nf}
 WORKDIR=/home/ibar/adna/Oyster_QX_Disease
@@ -535,7 +537,7 @@ sbatch -a 1-2,4 --job-name=$JOBNAME --cpus-per-task=$NCORES --mem=${MEM}G --time
 # each job took roughly 3:30 hours
 ```
 
-Using the Nextflow-enabled version of DIAMOND (reducing the time to 1.5h)
+Using [nf-blast](https://github.com/IdoBar/nf-blast), a Nextflow-enabled version of DIAMOND v2.1.9 (reducing the time to 1.5h)
 
 ```{bash prot-diamond-nf}
 start_long_interactive_job # start interactive job on Bunya
