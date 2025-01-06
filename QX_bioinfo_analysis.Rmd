@@ -684,45 +684,45 @@ sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=
 
 ```
 
-### SRO transcriptome assembly with ORP
-The SRO transcriptome of non-infected (control) tissues was also assembled with the Oyster River Protocol pipeline [@macmanesOysterRiverProtocol2018a].
+<!-- ### SRO transcriptome assembly with ORP -->
+<!-- The SRO transcriptome of non-infected (control) tissues was also assembled with the Oyster River Protocol pipeline [@macmanesOysterRiverProtocol2018a]. -->
 
-```{bash orp-assembly}
-# prepare slurm script
-WORKDIR='/scratch/project/adna/Oyster_QX_Disease'
-JOBNAME="SRO_orp_pipeline"
-NCORES=24
-MEM=150
-WALLTIME=200:00:00
-mkdir -p $WORKDIR/$JOBNAME && cd $WORKDIR/$JOBNAME
+<!-- ```{bash orp-assembly} -->
+<!-- # prepare slurm script -->
+<!-- WORKDIR='/scratch/project/adna/Oyster_QX_Disease' -->
+<!-- JOBNAME="SRO_orp_pipeline" -->
+<!-- NCORES=24 -->
+<!-- MEM=150 -->
+<!-- WALLTIME=200:00:00 -->
+<!-- mkdir -p $WORKDIR/$JOBNAME && cd $WORKDIR/$JOBNAME -->
 
-echo '#!/bin/bash --login'"
-#SBATCH --job-name=$JOBNAME
-#SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --output=%x.%j.log
-#SBATCH --cpus-per-task=$NCORES
-#SBATCH --mem=${MEM}G
-#SBATCH --time=$WALLTIME
-#SBATCH --account=a_agri_genomics
-#SBATCH --partition=general
+<!-- echo '#!/bin/bash --login'" -->
+<!-- #SBATCH --job-name=$JOBNAME -->
+<!-- #SBATCH --nodes=1 -->
+<!-- #SBATCH --ntasks=1 -->
+<!-- #SBATCH --output=%x.%j.log -->
+<!-- #SBATCH --cpus-per-task=$NCORES -->
+<!-- #SBATCH --mem=${MEM}G -->
+<!-- #SBATCH --time=$WALLTIME -->
+<!-- #SBATCH --account=a_agri_genomics -->
+<!-- #SBATCH --partition=general -->
 
-source ~/.bashrc
-set -Eeo pipefail
-cd \$SLURM_SUBMIT_DIR
+<!-- source ~/.bashrc -->
+<!-- set -Eeo pipefail -->
+<!-- cd \$SLURM_SUBMIT_DIR -->
 
-apptainer exec -B $WORKDIR:/scratch --no-mount /home $NXF_APPTAINER_CACHEDIR/docker.io-macmaneslab-orp-2.3.3.img bash -c \"source /home/orp/Oyster_River_Protocol/software/anaconda/install/bin/activate orp && unset -f which && cd /scratch/$JOBNAME && /home/orp/Oyster_River_Protocol/oyster.mk TPM_FILT=1 CPU=\$SLURM_CPUS_PER_TASK MEM=$MEM  READ1=/scratch/SRO_TransPi_assembly/input_files/unfixrm_SRO_control_R1.cor.fastq.gz READ2=/scratch/SRO_TransPi_assembly/input_files/unfixrm_SRO_control_R2.cor.fastq.gz RUNOUT=SRO_trans_orp\" " >  $JOBNAME.slurm
+<!-- apptainer exec -B $WORKDIR:/scratch --no-mount /home $NXF_APPTAINER_CACHEDIR/docker.io-macmaneslab-orp-2.3.3.img bash -c \"source /home/orp/Oyster_River_Protocol/software/anaconda/install/bin/activate orp && unset -f which && cd /scratch/$JOBNAME && /home/orp/Oyster_River_Protocol/oyster.mk TPM_FILT=1 CPU=\$SLURM_CPUS_PER_TASK MEM=$MEM  READ1=/scratch/SRO_TransPi_assembly/input_files/unfixrm_SRO_control_R1.cor.fastq.gz READ2=/scratch/SRO_TransPi_assembly/input_files/unfixrm_SRO_control_R2.cor.fastq.gz RUNOUT=SRO_trans_orp\" " >  $JOBNAME.slurm -->
 
-# submit the job
-sbatch $JOBNAME.slurm
+<!-- # submit the job -->
+<!-- sbatch $JOBNAME.slurm -->
 
 
-```
+<!-- ``` -->
 
 
 #### Gene Expression Analysis
 
-The chosen most representative transcriptome assembly for SRO (Rcorrected SRO non-infected assembly) was used as reference to quantify gene/transcript abundance using [Salmon](https://salmon.readthedocs.io/en/latest/salmon.html) [@patroSalmonProvidesFast2017, @loveSwimmingDownstreamStatistical2018].
+The chosen most representative transcriptome assembly for SRO (Rcorrected SRO non-infected assembly) was used as reference to quantify gene/transcript abundance using [Salmon](https://salmon.readthedocs.io/en/latest/salmon.html) [@patroSalmonProvidesFast2017; @loveSwimmingDownstreamStatistical2018].
 
 ```{bash salmon-quant}
 CONDA_NAME=genomics
@@ -752,7 +752,7 @@ sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=
 
 ```
 
-Expression-based clustering of transcripts was performed with [RapClust](https://github.com/COMBINE-lab/RapClust) [@trapnellDifferentialAnalysisGene2013]. 
+Expression-based clustering of transcripts was performed with [RapClust](https://github.com/COMBINE-lab/RapClust) [@srivastavaAccurateFastLightweight2016a]. 
 
 ```{bash rapclust}
 CONDA_NAME=genomics

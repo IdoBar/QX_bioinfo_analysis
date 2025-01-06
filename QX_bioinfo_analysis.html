@@ -11,7 +11,7 @@
 
 <meta name="author" content="Niki Nenadic and Ido Bar" />
 
-<meta name="date" content="2024-12-19" />
+<meta name="date" content="2025-01-06" />
 
 <title>Transcriptome analysis of Marteilia sydneyi and Saccostrea glomerata during QX infection in Sydney Rock Oysters</title>
 
@@ -2943,7 +2943,7 @@ border-radius: 0px;
 
 <h1 class="title toc-ignore">Transcriptome analysis of <em>Marteilia sydneyi</em> and <em>Saccostrea glomerata</em> during QX infection in Sydney Rock Oysters</h1>
 <h4 class="author">Niki Nenadic and Ido Bar</h4>
-<h4 class="date">19 December 2024</h4>
+<h4 class="date">06 January 2025</h4>
 
 </div>
 
@@ -3577,93 +3577,89 @@ Notice the issues mentioned above with SignalP and TMHMM and a new one for Phobi
 <span id="cb13-42"><a href="#cb13-42" tabindex="-1"></a><span class="co"># --merge-assemblies {sample}.merged.fa </span></span>
 <span id="cb13-43"><a href="#cb13-43" tabindex="-1"></a><span class="co"># submit the job array to the cluster</span></span>
 <span id="cb13-44"><a href="#cb13-44" tabindex="-1"></a><span class="ex">sbatch</span> <span class="at">-a</span> 1-<span class="va">$(</span><span class="fu">cat</span> <span class="va">$JOBNAME</span>.cmds <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span><span class="va">)</span>%10 <span class="at">--job-name</span><span class="op">=</span><span class="va">$JOBNAME</span> <span class="at">--cpus-per-task</span><span class="op">=</span><span class="va">$NCORES</span> <span class="at">--mem</span><span class="op">=</span><span class="va">${MEM}</span>G <span class="at">--time</span><span class="op">=</span><span class="va">$WALLTIME</span> <span class="at">--export</span><span class="op">=</span>ALL,CMDS_FILE=<span class="va">$JOBNAME</span>.cmds,CONDA_NAME=<span class="va">$CONDA_NAME</span> <span class="va">${WORKDIR}</span>/array.slurm</span></code></pre></div>
+<!-- ### SRO transcriptome assembly with ORP -->
+<!-- The SRO transcriptome of non-infected (control) tissues was also assembled with the Oyster River Protocol pipeline [@macmanesOysterRiverProtocol2018a]. -->
+<!-- ```{bash orp-assembly} -->
+<!-- # prepare slurm script -->
+<!-- WORKDIR='/scratch/project/adna/Oyster_QX_Disease' -->
+<!-- JOBNAME="SRO_orp_pipeline" -->
+<!-- NCORES=24 -->
+<!-- MEM=150 -->
+<!-- WALLTIME=200:00:00 -->
+<!-- mkdir -p $WORKDIR/$JOBNAME && cd $WORKDIR/$JOBNAME -->
+<!-- echo '#!/bin/bash --login'" -->
+<!-- #SBATCH --job-name=$JOBNAME -->
+<!-- #SBATCH --nodes=1 -->
+<!-- #SBATCH --ntasks=1 -->
+<!-- #SBATCH --output=%x.%j.log -->
+<!-- #SBATCH --cpus-per-task=$NCORES -->
+<!-- #SBATCH --mem=${MEM}G -->
+<!-- #SBATCH --time=$WALLTIME -->
+<!-- #SBATCH --account=a_agri_genomics -->
+<!-- #SBATCH --partition=general -->
+<!-- source ~/.bashrc -->
+<!-- set -Eeo pipefail -->
+<!-- cd \$SLURM_SUBMIT_DIR -->
+<!-- apptainer exec -B $WORKDIR:/scratch --no-mount /home $NXF_APPTAINER_CACHEDIR/docker.io-macmaneslab-orp-2.3.3.img bash -c \"source /home/orp/Oyster_River_Protocol/software/anaconda/install/bin/activate orp && unset -f which && cd /scratch/$JOBNAME && /home/orp/Oyster_River_Protocol/oyster.mk TPM_FILT=1 CPU=\$SLURM_CPUS_PER_TASK MEM=$MEM  READ1=/scratch/SRO_TransPi_assembly/input_files/unfixrm_SRO_control_R1.cor.fastq.gz READ2=/scratch/SRO_TransPi_assembly/input_files/unfixrm_SRO_control_R2.cor.fastq.gz RUNOUT=SRO_trans_orp\" " >  $JOBNAME.slurm -->
+<!-- # submit the job -->
+<!-- sbatch $JOBNAME.slurm -->
+<!-- ``` -->
 </div>
 </div>
-</div>
-<div id="sro-transcriptome-assembly-with-orp" class="section level3">
-<h3>SRO transcriptome assembly with ORP</h3>
-<p>The SRO transcriptome of non-infected (control) tissues was also assembled with the Oyster River Protocol pipeline <span class="citation">(MacManes 2018)</span>.</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="co"># prepare slurm script</span></span>
-<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="va">WORKDIR</span><span class="op">=</span><span class="st">&#39;/scratch/project/adna/Oyster_QX_Disease&#39;</span></span>
-<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="va">JOBNAME</span><span class="op">=</span><span class="st">&quot;SRO_orp_pipeline&quot;</span></span>
-<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="va">NCORES</span><span class="op">=</span>24</span>
-<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="va">MEM</span><span class="op">=</span>150</span>
-<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="va">WALLTIME</span><span class="op">=</span>200:00:00</span>
-<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">$WORKDIR</span>/<span class="va">$JOBNAME</span> <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> <span class="va">$WORKDIR</span>/<span class="va">$JOBNAME</span></span>
-<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a></span>
-<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&#39;#!/bin/bash --login&#39;&quot;</span></span>
-<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="st">#SBATCH --job-name=</span><span class="va">$JOBNAME</span></span>
-<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="st">#SBATCH --nodes=1</span></span>
-<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a><span class="st">#SBATCH --ntasks=1</span></span>
-<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a><span class="st">#SBATCH --output=%x.%j.log</span></span>
-<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a><span class="st">#SBATCH --cpus-per-task=</span><span class="va">$NCORES</span></span>
-<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a><span class="st">#SBATCH --mem=</span><span class="va">${MEM}</span><span class="st">G</span></span>
-<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a><span class="st">#SBATCH --time=</span><span class="va">$WALLTIME</span></span>
-<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a><span class="st">#SBATCH --account=a_agri_genomics</span></span>
-<span id="cb14-18"><a href="#cb14-18" tabindex="-1"></a><span class="st">#SBATCH --partition=general</span></span>
-<span id="cb14-19"><a href="#cb14-19" tabindex="-1"></a></span>
-<span id="cb14-20"><a href="#cb14-20" tabindex="-1"></a><span class="st">source ~/.bashrc</span></span>
-<span id="cb14-21"><a href="#cb14-21" tabindex="-1"></a><span class="st">set -Eeo pipefail</span></span>
-<span id="cb14-22"><a href="#cb14-22" tabindex="-1"></a><span class="st">cd </span><span class="dt">\$</span><span class="st">SLURM_SUBMIT_DIR</span></span>
-<span id="cb14-23"><a href="#cb14-23" tabindex="-1"></a></span>
-<span id="cb14-24"><a href="#cb14-24" tabindex="-1"></a><span class="st">apptainer exec -B </span><span class="va">$WORKDIR</span><span class="st">:/scratch --no-mount /home </span><span class="va">$NXF_APPTAINER_CACHEDIR</span><span class="st">/docker.io-macmaneslab-orp-2.3.3.img bash -c </span><span class="dt">\&quot;</span><span class="st">source /home/orp/Oyster_River_Protocol/software/anaconda/install/bin/activate orp &amp;&amp; unset -f which &amp;&amp; cd /scratch/</span><span class="va">$JOBNAME</span><span class="st"> &amp;&amp; /home/orp/Oyster_River_Protocol/oyster.mk TPM_FILT=1 CPU=</span><span class="dt">\$</span><span class="st">SLURM_CPUS_PER_TASK MEM=</span><span class="va">$MEM</span><span class="st">  READ1=/scratch/SRO_TransPi_assembly/input_files/unfixrm_SRO_control_R1.cor.fastq.gz READ2=/scratch/SRO_TransPi_assembly/input_files/unfixrm_SRO_control_R2.cor.fastq.gz RUNOUT=SRO_trans_orp</span><span class="dt">\&quot;</span><span class="st"> &quot;</span> <span class="op">&gt;</span>  <span class="va">$JOBNAME</span>.slurm</span>
-<span id="cb14-25"><a href="#cb14-25" tabindex="-1"></a></span>
-<span id="cb14-26"><a href="#cb14-26" tabindex="-1"></a><span class="co"># submit the job</span></span>
-<span id="cb14-27"><a href="#cb14-27" tabindex="-1"></a><span class="ex">sbatch</span> <span class="va">$JOBNAME</span>.slurm</span></code></pre></div>
 <div id="gene-expression-analysis" class="section level4">
 <h4>Gene Expression Analysis</h4>
-<p>The chosen most representative transcriptome assembly for SRO (Rcorrected SRO non-infected assembly) was used as reference to quantify gene/transcript abundance using <a href="https://salmon.readthedocs.io/en/latest/salmon.html">Salmon</a> <span class="citation">Love <em>et al.</em> (2018)</span>.</p>
+<p>The chosen most representative transcriptome assembly for SRO (Rcorrected SRO non-infected assembly) was used as reference to quantify gene/transcript abundance using <a href="https://salmon.readthedocs.io/en/latest/salmon.html">Salmon</a> <span class="citation">(Patro <em>et al.</em> 2017; Love <em>et al.</em> 2018)</span>.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="va">CONDA_NAME</span><span class="op">=</span>genomics</span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="ex">mamba</span> install <span class="at">-n</span> <span class="va">$CONDA_NAME</span> kallisto salmon </span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="va">WORKDIR</span><span class="op">=</span>/home/ibar/adna/Oyster_QX_Disease</span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/Gene_expression</span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="bu">cd</span> !$</span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a></span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="va">JOBNAME</span><span class="op">=</span><span class="st">&quot;Salmon_index&quot;</span></span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="va">NCORES</span><span class="op">=</span>12</span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="va">MEM</span><span class="op">=</span>64</span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="va">WALLTIME</span><span class="op">=</span>10:00:00</span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="ex">parallel</span> <span class="at">--dry-run</span> <span class="st">&quot;salmon index -t {} -i {/.}.index&quot;</span> ::: <span class="va">$(</span><span class="fu">ls</span> <span class="at">-1</span> <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/results/assemblies/<span class="pp">*</span>Trinity.fa <span class="va">)</span> <span class="op">&gt;</span> <span class="va">$JOBNAME</span>.cmds </span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a></span>
+<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a><span class="co"># submit the job array to the cluster</span></span>
+<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a><span class="ex">sbatch</span> <span class="at">-a</span> 1-<span class="va">$(</span><span class="fu">cat</span> <span class="va">$JOBNAME</span>.cmds <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span><span class="va">)</span>%10 <span class="at">--job-name</span><span class="op">=</span><span class="va">$JOBNAME</span> <span class="at">--cpus-per-task</span><span class="op">=</span><span class="va">$NCORES</span> <span class="at">--mem</span><span class="op">=</span><span class="va">${MEM}</span>G <span class="at">--time</span><span class="op">=</span><span class="va">$WALLTIME</span> <span class="at">--export</span><span class="op">=</span>ALL,CMDS_FILE=<span class="va">$JOBNAME</span>.cmds,CONDA_NAME=<span class="va">$CONDA_NAME</span> <span class="va">${WORKDIR}</span>/array.slurm</span>
+<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a></span>
+<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a><span class="va">DATE</span><span class="op">=</span><span class="kw">`</span><span class="fu">date</span> +%d_%m_%Y<span class="kw">`</span></span>
+<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a><span class="va">JOBNAME</span><span class="op">=</span><span class="st">&quot;Salmon_quant_</span><span class="va">$DATE</span><span class="st">&quot;</span></span>
+<span id="cb14-18"><a href="#cb14-18" tabindex="-1"></a><span class="va">RUNDIR</span><span class="op">=</span><span class="va">$WORKDIR</span>/SRO_TransPi_assembly/Gene_expression/<span class="va">$JOBNAME</span></span>
+<span id="cb14-19"><a href="#cb14-19" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">$RUNDIR</span> <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> <span class="va">$RUNDIR</span></span>
+<span id="cb14-20"><a href="#cb14-20" tabindex="-1"></a><span class="ex">parallel</span> <span class="at">--dry-run</span> <span class="at">--rpl</span> <span class="st">&quot;{sample} s:.+/(.+)_1.fastq.gz:\1:&quot;</span> <span class="at">--rpl</span> <span class="st">&quot;{read2} s:_1:_2:&quot;</span> <span class="st">&quot;salmon quant -i </span><span class="va">$WORKDIR</span><span class="st">/SRO_TransPi_assembly/Gene_expression/unfixrm_SRO_control.Trinity.index -l A -1 {} -2 {read2} -o {sample}_salmon_eq --numBootstraps 500 --useVBOpt --seqBias --dumpEq -p </span><span class="dt">\$</span><span class="st">SLURM_CPUS_PER_TASK --validateMappings&quot;</span> ::: <span class="va">$(</span><span class="fu">ls</span> <span class="at">-1</span> <span class="va">$WORKDIR</span>/QX_RNA-Seq/data/NN01-5<span class="pp">*</span>_1.fastq.gz <span class="va">)</span> <span class="op">&gt;</span> <span class="va">$JOBNAME</span>.cmds</span>
+<span id="cb14-21"><a href="#cb14-21" tabindex="-1"></a></span>
+<span id="cb14-22"><a href="#cb14-22" tabindex="-1"></a><span class="co"># submit the job array to the cluster</span></span>
+<span id="cb14-23"><a href="#cb14-23" tabindex="-1"></a><span class="ex">sbatch</span> <span class="at">-a</span> 1-<span class="va">$(</span><span class="fu">cat</span> <span class="va">$JOBNAME</span>.cmds <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span><span class="va">)</span>%10 <span class="at">--job-name</span><span class="op">=</span><span class="va">$JOBNAME</span> <span class="at">--cpus-per-task</span><span class="op">=</span><span class="va">$NCORES</span> <span class="at">--mem</span><span class="op">=</span><span class="va">${MEM}</span>G <span class="at">--time</span><span class="op">=</span><span class="va">$WALLTIME</span> <span class="at">--export</span><span class="op">=</span>ALL,CMDS_FILE=<span class="va">$JOBNAME</span>.cmds,CONDA_NAME=<span class="va">$CONDA_NAME</span> <span class="va">${WORKDIR}</span>/array.slurm</span></code></pre></div>
+<p>Expression-based clustering of transcripts was performed with <a href="https://github.com/COMBINE-lab/RapClust">RapClust</a> <span class="citation">(Srivastava <em>et al.</em> 2016)</span>.</p>
 <div class="sourceCode" id="cb15"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="va">CONDA_NAME</span><span class="op">=</span>genomics</span>
-<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="ex">mamba</span> install <span class="at">-n</span> <span class="va">$CONDA_NAME</span> kallisto salmon </span>
-<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="va">WORKDIR</span><span class="op">=</span>/home/ibar/adna/Oyster_QX_Disease</span>
-<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/Gene_expression</span>
-<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="bu">cd</span> !$</span>
-<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a></span>
-<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a><span class="va">JOBNAME</span><span class="op">=</span><span class="st">&quot;Salmon_index&quot;</span></span>
-<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a><span class="va">NCORES</span><span class="op">=</span>12</span>
-<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a><span class="va">MEM</span><span class="op">=</span>64</span>
-<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a><span class="va">WALLTIME</span><span class="op">=</span>10:00:00</span>
-<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a><span class="ex">parallel</span> <span class="at">--dry-run</span> <span class="st">&quot;salmon index -t {} -i {/.}.index&quot;</span> ::: <span class="va">$(</span><span class="fu">ls</span> <span class="at">-1</span> <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/results/assemblies/<span class="pp">*</span>Trinity.fa <span class="va">)</span> <span class="op">&gt;</span> <span class="va">$JOBNAME</span>.cmds </span>
-<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a></span>
-<span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a><span class="co"># submit the job array to the cluster</span></span>
-<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a><span class="ex">sbatch</span> <span class="at">-a</span> 1-<span class="va">$(</span><span class="fu">cat</span> <span class="va">$JOBNAME</span>.cmds <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span><span class="va">)</span>%10 <span class="at">--job-name</span><span class="op">=</span><span class="va">$JOBNAME</span> <span class="at">--cpus-per-task</span><span class="op">=</span><span class="va">$NCORES</span> <span class="at">--mem</span><span class="op">=</span><span class="va">${MEM}</span>G <span class="at">--time</span><span class="op">=</span><span class="va">$WALLTIME</span> <span class="at">--export</span><span class="op">=</span>ALL,CMDS_FILE=<span class="va">$JOBNAME</span>.cmds,CONDA_NAME=<span class="va">$CONDA_NAME</span> <span class="va">${WORKDIR}</span>/array.slurm</span>
-<span id="cb15-15"><a href="#cb15-15" tabindex="-1"></a></span>
-<span id="cb15-16"><a href="#cb15-16" tabindex="-1"></a><span class="va">DATE</span><span class="op">=</span><span class="kw">`</span><span class="fu">date</span> +%d_%m_%Y<span class="kw">`</span></span>
-<span id="cb15-17"><a href="#cb15-17" tabindex="-1"></a><span class="va">JOBNAME</span><span class="op">=</span><span class="st">&quot;Salmon_quant_</span><span class="va">$DATE</span><span class="st">&quot;</span></span>
-<span id="cb15-18"><a href="#cb15-18" tabindex="-1"></a><span class="va">RUNDIR</span><span class="op">=</span><span class="va">$WORKDIR</span>/SRO_TransPi_assembly/Gene_expression/<span class="va">$JOBNAME</span></span>
-<span id="cb15-19"><a href="#cb15-19" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">$RUNDIR</span> <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> <span class="va">$RUNDIR</span></span>
-<span id="cb15-20"><a href="#cb15-20" tabindex="-1"></a><span class="ex">parallel</span> <span class="at">--dry-run</span> <span class="at">--rpl</span> <span class="st">&quot;{sample} s:.+/(.+)_1.fastq.gz:\1:&quot;</span> <span class="at">--rpl</span> <span class="st">&quot;{read2} s:_1:_2:&quot;</span> <span class="st">&quot;salmon quant -i </span><span class="va">$WORKDIR</span><span class="st">/SRO_TransPi_assembly/Gene_expression/unfixrm_SRO_control.Trinity.index -l A -1 {} -2 {read2} -o {sample}_salmon_eq --numBootstraps 500 --useVBOpt --seqBias --dumpEq -p </span><span class="dt">\$</span><span class="st">SLURM_CPUS_PER_TASK --validateMappings&quot;</span> ::: <span class="va">$(</span><span class="fu">ls</span> <span class="at">-1</span> <span class="va">$WORKDIR</span>/QX_RNA-Seq/data/NN01-5<span class="pp">*</span>_1.fastq.gz <span class="va">)</span> <span class="op">&gt;</span> <span class="va">$JOBNAME</span>.cmds</span>
-<span id="cb15-21"><a href="#cb15-21" tabindex="-1"></a></span>
-<span id="cb15-22"><a href="#cb15-22" tabindex="-1"></a><span class="co"># submit the job array to the cluster</span></span>
-<span id="cb15-23"><a href="#cb15-23" tabindex="-1"></a><span class="ex">sbatch</span> <span class="at">-a</span> 1-<span class="va">$(</span><span class="fu">cat</span> <span class="va">$JOBNAME</span>.cmds <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span><span class="va">)</span>%10 <span class="at">--job-name</span><span class="op">=</span><span class="va">$JOBNAME</span> <span class="at">--cpus-per-task</span><span class="op">=</span><span class="va">$NCORES</span> <span class="at">--mem</span><span class="op">=</span><span class="va">${MEM}</span>G <span class="at">--time</span><span class="op">=</span><span class="va">$WALLTIME</span> <span class="at">--export</span><span class="op">=</span>ALL,CMDS_FILE=<span class="va">$JOBNAME</span>.cmds,CONDA_NAME=<span class="va">$CONDA_NAME</span> <span class="va">${WORKDIR}</span>/array.slurm</span></code></pre></div>
-<p>Expression-based clustering of transcripts was performed with <a href="https://github.com/COMBINE-lab/RapClust">RapClust</a> <span class="citation">(Trapnell <em>et al.</em> 2013)</span>.</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="va">CONDA_NAME</span><span class="op">=</span>genomics</span>
-<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="ex">conda</span> activate <span class="va">$CONDA_NAME</span></span>
-<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a><span class="ex">mamba</span> install mcl <span class="co"># need to install mcl</span></span>
-<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a><span class="ex">pip</span> install git+https://github.com/IdoBar/RapClust@patch-1</span>
-<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a><span class="co"># mamba install -n $CONDA_NAME kallisto salmon rapclust</span></span>
-<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a><span class="va">WORKDIR</span><span class="op">=</span>/home/ibar/adna/Oyster_QX_Disease</span>
-<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a><span class="bu">cd</span> <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/Gene_expression/Salmon_quant_14_06_2024</span>
-<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a></span>
-<span id="cb16-9"><a href="#cb16-9" tabindex="-1"></a><span class="co"># unzip the eq_classes files</span></span>
-<span id="cb16-10"><a href="#cb16-10" tabindex="-1"></a><span class="fu">find</span> . <span class="at">-name</span> eq_classes.txt.gz <span class="kw">|</span> <span class="ex">parallel</span>  <span class="st">&quot;gzip -cd {} &gt; {.}&quot;</span></span>
-<span id="cb16-11"><a href="#cb16-11" tabindex="-1"></a></span>
-<span id="cb16-12"><a href="#cb16-12" tabindex="-1"></a><span class="va">JOBNAME</span><span class="op">=</span><span class="st">&quot;SRO_rapclust&quot;</span></span>
-<span id="cb16-13"><a href="#cb16-13" tabindex="-1"></a><span class="va">NCORES</span><span class="op">=</span>12</span>
-<span id="cb16-14"><a href="#cb16-14" tabindex="-1"></a><span class="va">MEM</span><span class="op">=</span>64</span>
-<span id="cb16-15"><a href="#cb16-15" tabindex="-1"></a><span class="va">WALLTIME</span><span class="op">=</span>10:00:00</span>
-<span id="cb16-16"><a href="#cb16-16" tabindex="-1"></a><span class="co"># prepare config file for RapClust</span></span>
-<span id="cb16-17"><a href="#cb16-17" tabindex="-1"></a><span class="fu">find</span> . <span class="at">-maxdepth</span> 1 <span class="at">-type</span> d <span class="at">-name</span>  <span class="st">&quot;NN01-*salmon_eq&quot;</span> <span class="kw">|</span> <span class="fu">sort</span> <span class="kw">|</span> <span class="fu">gawk</span> <span class="at">-F</span> <span class="st">&quot;/&quot;</span> <span class="st">&#39;BEGIN{printf &quot;conditions:\n  - SRO_Control\n  - SRO_QX\nsamples:\n  SRO_Control:&quot;}{printf &quot;\n    - %s&quot;, $2}NR==3{printf &quot;\n  SRO_QX:&quot;}END{printf &quot;\noutdir: SRO_rapclust\n&quot;}&#39;</span> <span class="op">&gt;</span> <span class="va">$JOBNAME</span>.yaml</span>
-<span id="cb16-18"><a href="#cb16-18" tabindex="-1"></a><span class="co"># prepare SLURM script </span></span>
-<span id="cb16-19"><a href="#cb16-19" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;RapClust --config </span><span class="va">$JOBNAME</span><span class="st">.yaml&quot;</span> <span class="op">&gt;</span> <span class="va">$JOBNAME</span>.cmds</span>
-<span id="cb16-20"><a href="#cb16-20" tabindex="-1"></a><span class="co"># submit the job array to the cluster</span></span>
-<span id="cb16-21"><a href="#cb16-21" tabindex="-1"></a><span class="ex">sbatch</span> <span class="at">-a</span> 1 <span class="at">--job-name</span><span class="op">=</span><span class="va">$JOBNAME</span> <span class="at">--cpus-per-task</span><span class="op">=</span><span class="va">$NCORES</span> <span class="at">--mem</span><span class="op">=</span><span class="va">${MEM}</span>G <span class="at">--time</span><span class="op">=</span><span class="va">$WALLTIME</span> <span class="at">--export</span><span class="op">=</span>ALL,CMDS_FILE=<span class="va">$JOBNAME</span>.cmds,CONDA_NAME=<span class="va">$CONDA_NAME</span> <span class="va">${WORKDIR}</span>/array.slurm</span></code></pre></div>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="ex">conda</span> activate <span class="va">$CONDA_NAME</span></span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="ex">mamba</span> install mcl <span class="co"># need to install mcl</span></span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="ex">pip</span> install git+https://github.com/IdoBar/RapClust@patch-1</span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="co"># mamba install -n $CONDA_NAME kallisto salmon rapclust</span></span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="va">WORKDIR</span><span class="op">=</span>/home/ibar/adna/Oyster_QX_Disease</span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a><span class="bu">cd</span> <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/Gene_expression/Salmon_quant_14_06_2024</span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a></span>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a><span class="co"># unzip the eq_classes files</span></span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a><span class="fu">find</span> . <span class="at">-name</span> eq_classes.txt.gz <span class="kw">|</span> <span class="ex">parallel</span>  <span class="st">&quot;gzip -cd {} &gt; {.}&quot;</span></span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a></span>
+<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a><span class="va">JOBNAME</span><span class="op">=</span><span class="st">&quot;SRO_rapclust&quot;</span></span>
+<span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a><span class="va">NCORES</span><span class="op">=</span>12</span>
+<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a><span class="va">MEM</span><span class="op">=</span>64</span>
+<span id="cb15-15"><a href="#cb15-15" tabindex="-1"></a><span class="va">WALLTIME</span><span class="op">=</span>10:00:00</span>
+<span id="cb15-16"><a href="#cb15-16" tabindex="-1"></a><span class="co"># prepare config file for RapClust</span></span>
+<span id="cb15-17"><a href="#cb15-17" tabindex="-1"></a><span class="fu">find</span> . <span class="at">-maxdepth</span> 1 <span class="at">-type</span> d <span class="at">-name</span>  <span class="st">&quot;NN01-*salmon_eq&quot;</span> <span class="kw">|</span> <span class="fu">sort</span> <span class="kw">|</span> <span class="fu">gawk</span> <span class="at">-F</span> <span class="st">&quot;/&quot;</span> <span class="st">&#39;BEGIN{printf &quot;conditions:\n  - SRO_Control\n  - SRO_QX\nsamples:\n  SRO_Control:&quot;}{printf &quot;\n    - %s&quot;, $2}NR==3{printf &quot;\n  SRO_QX:&quot;}END{printf &quot;\noutdir: SRO_rapclust\n&quot;}&#39;</span> <span class="op">&gt;</span> <span class="va">$JOBNAME</span>.yaml</span>
+<span id="cb15-18"><a href="#cb15-18" tabindex="-1"></a><span class="co"># prepare SLURM script </span></span>
+<span id="cb15-19"><a href="#cb15-19" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;RapClust --config </span><span class="va">$JOBNAME</span><span class="st">.yaml&quot;</span> <span class="op">&gt;</span> <span class="va">$JOBNAME</span>.cmds</span>
+<span id="cb15-20"><a href="#cb15-20" tabindex="-1"></a><span class="co"># submit the job array to the cluster</span></span>
+<span id="cb15-21"><a href="#cb15-21" tabindex="-1"></a><span class="ex">sbatch</span> <span class="at">-a</span> 1 <span class="at">--job-name</span><span class="op">=</span><span class="va">$JOBNAME</span> <span class="at">--cpus-per-task</span><span class="op">=</span><span class="va">$NCORES</span> <span class="at">--mem</span><span class="op">=</span><span class="va">${MEM}</span>G <span class="at">--time</span><span class="op">=</span><span class="va">$WALLTIME</span> <span class="at">--export</span><span class="op">=</span>ALL,CMDS_FILE=<span class="va">$JOBNAME</span>.cmds,CONDA_NAME=<span class="va">$CONDA_NAME</span> <span class="va">${WORKDIR}</span>/array.slurm</span></code></pre></div>
 </div>
 </div>
 </div>
 <div id="general-information" class="section level2">
 <h2>General information</h2>
-<p>This document was last updated at 2024-12-19 11:27:54 using R Markdown (built with R version 4.2.1 (2022-06-23 ucrt)). Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. It is especially powerful at authoring documents and reports which include code and can execute code and use the results in the output. For more details on using R Markdown see <a href="http://rmarkdown.rstudio.com" class="uri">http://rmarkdown.rstudio.com</a> and <a href="https://www.rstudio.com/wp-content/uploads/2016/03/rmarkdown-cheatsheet-2.0.pdf">Rmarkdown cheatsheet</a>.</p>
+<p>This document was last updated at 2025-01-06 12:20:32 using R Markdown (built with R version 4.2.1 (2022-06-23 ucrt)). Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. It is especially powerful at authoring documents and reports which include code and can execute code and use the results in the output. For more details on using R Markdown see <a href="http://rmarkdown.rstudio.com" class="uri">http://rmarkdown.rstudio.com</a> and <a href="https://www.rstudio.com/wp-content/uploads/2016/03/rmarkdown-cheatsheet-2.0.pdf">Rmarkdown cheatsheet</a>.</p>
 <hr />
 </div>
 <div id="bibliography" class="section level2 unnumbered">
@@ -3699,9 +3695,6 @@ Li B, Fillmore N, Bai Y, et al. (2014) Evaluation of de novo transcriptome assem
 <div id="ref-loveSwimmingDownstreamStatistical2018" class="csl-entry">
 Love MI, Soneson C, Patro R (2018) Swimming downstream: Statistical analysis of differential transcript usage following <span>Salmon</span> quantification. F1000Research 7:952. doi: <a href="https://doi.org/10.12688/f1000research.15398.1">10.12688/f1000research.15398.1</a>
 </div>
-<div id="ref-macmanesOysterRiverProtocol2018a" class="csl-entry">
-MacManes MD (2018) The <span>Oyster River Protocol</span>: A multi-assembler and kmer approach for de novo transcriptome assembly. PeerJ 6:e5428. doi: <a href="https://doi.org/10.7717/peerj.5428">10.7717/peerj.5428</a>
-</div>
 <div id="ref-patroSalmonProvidesFast2017" class="csl-entry">
 Patro R, Duggal G, Love MI, et al. (2017) Salmon provides fast and bias-aware quantification of transcript expression. Nat Methods 14:417–419. doi: <a href="https://doi.org/10.1038/nmeth.4197">10.1038/nmeth.4197</a>
 </div>
@@ -3723,8 +3716,8 @@ Smith-Unna R, Boursnell C, Patro R, et al. (2016) <span>TransRate</span>: Refere
 <div id="ref-songRcorrectorEfficientAccurate2015a" class="csl-entry">
 Song L, Florea L (2015) Rcorrector: Efficient and accurate error correction for <span class="nocase">Illumina RNA-seq</span> reads. GigaScience 4:48. doi: <a href="https://doi.org/10.1186/s13742-015-0089-y">10.1186/s13742-015-0089-y</a>
 </div>
-<div id="ref-trapnellDifferentialAnalysisGene2013" class="csl-entry">
-Trapnell C, Hendrickson DG, Sauvageau M, et al. (2013) Differential analysis of gene regulation at transcript resolution with <span class="nocase">RNA-seq</span>. Nat Biotechnol 31:46–53. doi: <a href="https://doi.org/10.1038/nbt.2450">10.1038/nbt.2450</a>
+<div id="ref-srivastavaAccurateFastLightweight2016a" class="csl-entry">
+Srivastava A, Sarkar H, Malik L, Patro R (2016) Accurate, <span>Fast</span> and <span>Lightweight Clustering</span> of de novo <span>Transcriptomes</span> using <span>Fragment Equivalence Classes</span>. <a href="http://arxiv.org/abs/1604.03250">http://arxiv.org/abs/1604.03250. </a>Cited 6 Jan 2025
 </div>
 </div>
 </div>
