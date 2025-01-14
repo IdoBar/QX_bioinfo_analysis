@@ -5,6 +5,8 @@ date: "`r format(Sys.Date(), '%d %B %Y')`"
 always_allow_html: yes
 output: 
     bookdown::html_document2:
+      includes:
+        in_header: style/header.html
       df_print: paged
       theme: united
       highlight: pygments
@@ -1437,13 +1439,13 @@ cd $WORKDIR
 
 # annotate proteins with IPscan
 IPSCAN_VERSION=5.66-98.0
-mkdir -p $WORKDIR/ipscan
+mkdir -p $WORKDIR/ipscan $WORKDIR/phobius
 JOBNAME="QX_prot_ipscan"
 NCPUS=16
 MEM=128
 WALLTIME="10:00:00"
 # prepare the commands (don't forget to remove the asterisk at the end of the proteins!)
-find $WORKDIR/fun/update_results -name "*.proteins.fa" | parallel --dry-run "sed 's/[*]//g' {} > \$TMPDIR/{/} ; apptainer exec -B /home/ibar/scratch/tools -B $WORKDIR/ipscan:/output -B \$TMPDIR:/temp $NXF_SINGULARITY_CACHEDIR/interproscan_${IPSCAN_VERSION}.sif /opt/interproscan/interproscan.sh -i /temp/{/} -d /output -dra -pa -dp -goterms -f TSV -f XML -T /temp -cpu \$SLURM_CPUS_PER_TASK ; gawk '\$4~/PANTHER/' $WORKDIR/ipscan/{/}.tsv > $WORKDIR/ipscan/{/.}.panther.tsv" > $JOBNAME.cmd
+find $WORKDIR/fun/update_results -name "*.proteins.fa" | parallel --dry-run "sed 's/[*]//g' {} > \$TMPDIR/{/} ; apptainer exec -B /home/ibar/scratch/tools -B $WORKDIR/ipscan:/output -B \$TMPDIR:/temp $NXF_SINGULARITY_CACHEDIR/interproscan_${IPSCAN_VERSION}.sif /opt/interproscan/interproscan.sh -i /temp/{/} -d /output -dra -pa -dp -goterms -f TSV -f XML -T /temp -cpu \$SLURM_CPUS_PER_TASK ; gawk '\$4~/PANTHER/' $WORKDIR/ipscan/{/}.tsv > $WORKDIR/ipscan/{/.}.panther.tsv; phobius.pl -short /temp/{/} > $WORKDIR/phobius/phobius.results.txt" > $JOBNAME.cmd
 
 # submit the job array to the cluster
 sbatch -a 1-$(cat $JOBNAME.cmd | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=$NCPUS --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOBNAME.cmd,CONDA_NAME=base  ${HOME}/bin/array.slurm
@@ -1471,7 +1473,7 @@ conda activate $CONDA_NAME
 set -Eeo pipefail
 cd \$SLURM_SUBMIT_DIR
 # Functional annotation
-funannotate annotate -i fun --tmpdir /scratch/project/adna/tmp --cpus \$SLURM_CPUS_PER_TASK --busco_db protists --no-progress --iprscan $(find $WORKDIR/ipscan -name *.proteins.fa.xml)" >  $JOB_NAME.slurm
+funannotate annotate -i fun --tmpdir /scratch/project/adna/tmp --cpus \$SLURM_CPUS_PER_TASK --busco_db protists --no-progress --phobius $WORKDIR/phobius/phobius.results.txt --iprscan $(find $WORKDIR/ipscan -name *.proteins.fa.xml)" >  $JOB_NAME.slurm
 # submit to the cluster
 sbatch $JOB_NAME.slurm
 
@@ -1679,7 +1681,7 @@ sbatch SRO_stlfr_meta.slurm
 
 ## General information
 
-This document was last updated at `r Sys.time()` using R Markdown (built with `r R.version.string`). The source code for this website can be found on <https://github.com/IdoBar/QX_bioinfo_analysis>.
+This document was last updated at `r Sys.time()` using R Markdown (built with `r R.version.string`). The source code for this website can be found on <https://github.com/IdoBar/QX_bioinfo_analysis/tree/genome>.
 
 Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. It is especially powerful at authoring documents and reports which include code and can execute code and use the results in the output. For more details on using R Markdown see <http://rmarkdown.rstudio.com> and [Rmarkdown cheatsheet](https://www.rstudio.com/wp-content/uploads/2016/03/rmarkdown-cheatsheet-2.0.pdf).
 
