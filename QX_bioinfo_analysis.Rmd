@@ -1,5 +1,5 @@
 ---
-title: "Genome and Transcriptome analyses of _Marteilia sydneyi_"
+title: "Genome Assembly and Annotation of _Marteilia sydneyi_"
 author: "Niki Nenadic and Ido Bar"
 date: "`r format(Sys.Date(), '%d %B %Y')`"
 always_allow_html: yes
@@ -11,7 +11,7 @@ output:
       css: "style/style.css"
       toc: true
       toc_float: true
-      toc_depth: 3
+      toc_depth: 4
   #    highlight: pygments
       number_sections: false
       code_folding: hide
@@ -64,7 +64,7 @@ pacman::p_load(char = basename(fav_packages))
 8.  Summary statistics and visualisation
 
 ### Methods
-#### RNA extraction
+#### RNA extraction and sequencing
 RNA was extracted from the digestive gland of 3 healthy Sydney Rock Oysters (SRO, _Saccostrea glomerata_) and 3 SRO infected with QX disease (as confirmed by PCR assay on DNA extracted from each tissue) using the Trizol method. The RNA was sent for Illumina paired-end sequencing, generating 150bp reads (Macrogen, Korea). 
 
 The reads were downloaded to the Griffith University High Performance Computing (HPC) cluster (Gowonda) for bioinformatics processing and analyses, following the guidelines by Harvard Informatics (see [link](https://github.com/harvardinformatics/TranscriptomeAssemblyTools)) . 
@@ -287,7 +287,7 @@ aria2c -x5 https://github.com/nextflow-io/nextflow/releases/download/v22.11.1-ed
 chmod +x nextflow-22.11.1-edge-all # this is the only version that supports DSL1, Apptainer and has an update Tower plugin!
 ```
 
-##### Test TransPi on subset of reads from one sample
+Test TransPi on subset of reads from one sample
 
 ```{bash transpi-test}
 # install bbtools
@@ -318,7 +318,7 @@ nextflow-22.11.1-edge-all run /home/ibar/adna/tools/TransPi/TransPi.nf -with-tow
 
 ```
  
-##### Run TransPi on the combined and corrected reads from each experimental group 
+Run TransPi on the combined and corrected reads from each experimental group 
 
 ```{bash transpi-assemble}
 # WORKDIR=/scratch/s2978925/aDNA/niki_qx #Gowonda
@@ -341,7 +341,7 @@ nextflow-22.11.1-edge-all run /home/ibar/adna/tools/TransPi/TransPi.nf -with-tow
 
 ```
 
-##### Run EvidentialGene step of TransPi to collapse redundant transcripts
+Run EvidentialGene step of TransPi to collapse redundant transcripts
 
 ```{bash transpi-evigene}
 JOBNAME="onlyEvigene"
@@ -364,7 +364,7 @@ sbatch -a 1-$(cat $JOBNAME.resume.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-pe
 
 ```
 
-##### Annotate chosen assemblies
+#### Annotate chosen assemblies
 
 The assemblies were annotated with TransPi, using homology searches (BLAST and DIAMOND) against the Uniprot_Sprot protein database, as well as using HMM search against the PFam database of protein families. In addition, signal peptides, ribosomal genes and transmembrane topology were predicted with SignalP [@petersenSignalPDiscriminatingSignal2011], Rnammer and TMHMM [@kroghPredictingTransmembraneProtein2001], respectively [@emanuelssonLocatingProteinsCell2007].
 
@@ -390,8 +390,6 @@ sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=
 
 rclone copy -P --dry-run --include "*Trinity*" $WORKDIR/SRO_TransPi_assembly/results/assemblies GURS_shared:Oyster_QX_Disease/QX_RNA-Seq/SRO_TransPi_assembly/results/assemblies
 ```
-
-###### Annotate chosen assemblies with BLAST
 
 In addition to the annotation performed with TransPi, the transcriptomes were annotated against the non-redundant nucleotide and protein databases of the NCBI (`nt` and `nr`, respectively) to achieve more accurate species-specific annotations.
 
@@ -477,8 +475,6 @@ sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=
 
 ```
 
-###### Annotate predicted proteins with DIAMOND
-
 Even when using a split-combine strategy using `blast-nf`, BLASTp is just too slow (it takes around 50 hours to process a chunk of 500 proteins). Therefore we also used DIAMOND, which can be x1,000 quicker than BLAST [@buchfinkFastSensitiveProtein2015a].
 
 
@@ -559,9 +555,9 @@ sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=
 
 ```
 
-###### Functional annotation of predicted proteins with InterPro
+#### Functional annotation of predicted proteins
 
-The predicted proteins in the transcriptomes were further annotated using InterProScan (or [FA-nf](https://github.com/guigolab/FA-nf)) to assign protein families, motifs and ontologies to assist with transcript-to-gene annotation.
+The predicted proteins in the transcriptomes were further annotated using InterProScan [@jonesInterProScanGenomescaleProtein2014; @mitchellInterPro2019Improving2019] (or [FA-nf](https://github.com/guigolab/FA-nf)) to assign protein families, motifs and ontologies to assist with transcript-to-gene annotation.
 Notice the issues mentioned above with SignalP and TMHMM and a new one for Phobius (see discussions and solutions on [GitHub](https://github.com/nextgenusfs/funannotate/issues/696#issuecomment-1057663190) and [BioStar](https://www.biostars.org/p/238642/))
 
 ```{bash prot-annotation}
@@ -607,7 +603,8 @@ cd /opt/interproscan/; python3 setup.py -f interproscan.properties
 
 
 
-# annotate proteins 
+# annotate proteins
+IPSCAN_VERSION=5.66-98.0
 WORKDIR=/home/ibar/adna/Oyster_QX_Disease
 cd $WORKDIR/SRO_TransPi_assembly/Annotation
 mkdir -p $WORKDIR/SRO_TransPi_assembly/Annotation/Annotation_results/ipscan
@@ -631,7 +628,7 @@ rclone copy -P $WORKDIR/SRO_TransPi_assembly/Annotation/Annotation_results/ipsca
 
 These annotation tables were added to the Trinotate database of the assemblies.
 
-##### Assess the quality of assemblies
+#### Assess the quality of assemblies
 
 The transcriptome assemblies were assessed and compared using [rnaQuast](https://github.com/ablab/rnaquast) v2.2.3 [@bushmanovaRnaQUASTQualityAssessment2016], [TransRate](http://hibberdlab.com/transrate) v1.0.3 [@smith-unnaTransRateReferencefreeQuality2016] and [DETONATE](https://deweylab.biostat.wisc.edu/detonate/) v1.11 [@liEvaluationNovoTranscriptome2014b], as suggested in the Trinity [documentation](https://github.com/trinityrnaseq/trinityrnaseq/wiki/Transcriptome-Assembly-Quality-Assessment) and by @beheraPlantTranscriptomeAssembly2021.
 
@@ -686,7 +683,7 @@ sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=
 
 ```
 
-### SRO transcriptome assembly with ORP
+#### SRO transcriptome assembly with ORP
 The SRO transcriptome of non-infected (control) tissues was also assembled with the Oyster River Protocol pipeline [@macmanesOysterRiverProtocol2018a].
 
 ```{bash orp-assembly}
@@ -722,7 +719,7 @@ sbatch $JOBNAME.slurm
 ```
 
 
-#### Gene Expression Analysis
+### Gene Expression Analysis
 
 The chosen most representative transcriptome assembly (Rcorrected SRO non-infected assembly) was used as reference to quantify gene/transcript abundance using [Salmon](https://salmon.readthedocs.io/en/latest/salmon.html) [@patroSalmonProvidesFast2017, @loveSwimmingDownstreamStatistical2018] or [Kallisto](https://pachterlab.github.io/kallisto/about) [@brayNearoptimalProbabilisticRNAseq2016]
 
@@ -784,9 +781,7 @@ sbatch -a 1 --job-name=$JOBNAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WA
 
 # Genome assembly of _M. sydneyi_
 
-## Analysis Pipeline
-
-### General overview:
+## General overview of the analysis pipeline:
 
 1.  Data pre-processing:
     a.  Reads basecalling
@@ -800,12 +795,12 @@ sbatch -a 1 --job-name=$JOBNAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WA
 6.  Annotation of pathogen genes
 7.  Summary statistics and visualisation
 
-### Methods
+## Methods
 
-#### DNA Extraction
+### DNA Extraction
 High molecular DNA was extracted using the Monarch® HMW DNA Extraction Kit for Tissue (New England Biolabs, [NEB T3060](https://www.neb.com/en-au/products/t3060-monarch-hmw-dna-extraction-kit-for-tissue#Product%20Information)) from digestive gland tissue of Sydney rock oysters infected with QX disease. The samples were confirmed to be infected with QX (contain _M. sydneyi_) by a PCR assay using the extracted DNA as template, as described by XXX. DNA integrity, purity and quantity were assessed by gel electrophoresis, Nanodrop and Qubit, respectively.    
 
-#### Nanopore Sequencing and Basecalling
+### Nanopore Sequencing and Basecalling
 The DNA was prepared for long-read Nanopore sequencing by removal of contaminants (Qiagne [DNeasy PowerClean CleanUp Kit](https://www.qiagen.com/us/products/discovery-and-translational-research/dna-rna-purification/dna-purification/microbial-dna/dneasy-powerclean-cleanup-kit)) and short fragments (ONT Short Fragment Eliminator Kit, EXP-SFE001), followed by ligation of sequencing adapters using the Ligation sequencing DNA V14 (ONT SQK-LSK114) or the Rapid Barcoding kit (SQK-RBK110.96) for sequencing on an Oxford Nanopore Mk1C with a MINFLO114 flowcell (R10) or on a PromethION R9.4.1 flowcell, respectively.   
 PromethION data was first demultiplexed with Guppy, then the resulting `fast5` files were converted to `pod5` files using [pod5 package](https://pod5-file-format.readthedocs.io/en/0.2.0/docs/tools.html).  
 
@@ -991,7 +986,7 @@ In addition, it would be great to have a reference genome of a closely related s
 
 ```
 
-##### Comparison to Ascetosporean genomes
+#### Comparison to Ascetosporean genomes
 
 The assembled contigs were aligned to the newly published genomes of several Ascetosporea protists (including _Marteilia pararefringens_, see [NCBI Bioproject PRJNA1051017](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1051017); @hiltunenthorenComparativeGenomicsAscetosporea2024) using [nf-core/pairgenomealign](https://nf-co.re/pairgenomealign/1.1.0/) v1.1.0 and `mummer` [@marcaisMUMmer4FastVersatile2018].  
 
@@ -1069,7 +1064,7 @@ run_syny.pl -a Msyd_MPar_SYNY/*.gbff.gz -o Msyd_MPar_subset_SYNY --include Msyd_
 
 ```
 
-##### Contig annotation and taxonomic classification
+#### Contig annotation and taxonomic classification
 
 The assembled contigs can then be annotated with `BLASTn` for taxonomic classification.
 
@@ -1167,7 +1162,7 @@ diamond_tax_results <- accessionToTaxa(diamond_res$stitle[1], "data/NCBI_accessi
 
 ```
 
-##### Taxonomic classification and assembly summary with Blobtoolkit
+#### Taxonomic classification and assembly summary with Blobtoolkit
 
 An alternative approach is to use 'SprayNPray', as detailed in [@garberSprayNPrayUserfriendlyTaxonomic2022] or BlobToolKit ([BlobTools2](https://blobtoolkit.genomehubs.org/blobtools2/blobtools2-tutorials/getting-started-with-blobtools2)) [@challisBlobToolKitInteractiveQuality2020]
 
@@ -1219,7 +1214,7 @@ blobtools host
 
 ```
 
-##### Taxonomic classification with MMseq2
+#### Taxonomic classification with MMseq2
 
 ```{bash mmseq-tax-class}
 
@@ -1273,8 +1268,8 @@ sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=
 
 ```
 
-**Looks like we didn't assemble the reads properly!!**
-Need to redo that in a strand-specific (RF) manner
+<!-- **Looks like we didn't assemble the reads properly!!** -->
+<!-- Need to redo that in a strand-specific (RF) manner -->
 
 
 ```{bash funannotate-setup}
@@ -1300,8 +1295,12 @@ CONDA_NAME="funannotate"
 conda activate $CONDA_NAME
 # export environment variable for gmes_petap.pl location
 export GENEMARK_PATH=$(find $HOME/etc/tools/Annotation -name "gmes_petap.pl" | xargs dirname)
+# fix location of Evidence Modeler
+ln -s $CONDA_PREFIX/opt/evidencemodeler-2.1.0/EvmUtils/evidence_modeler.pl $CONDA_PREFIX/opt/evidencemodeler-2.1.0/evidence_modeler.pl
 # add signalp to the bin or PATH (must be installed manually)
 ln -s ~/scratch/tools/signalp-4.1/signalp ~/bin/
+# add phobius to the bin or PATH (must be installed manually)
+ ln -s /home/ibar/adna/tools/FA-nf/containers/interproscan/external/phobius/phobius.pl ~/bin/ 
 # download eggNOG data
 export EGGNOG_DATA_DIR=$HOME/aDNA/tools/eggnog_dbs && mkdir -p $EGGNOG_DATA_DIR
 download_eggnog_data.py
@@ -1392,7 +1391,7 @@ conda activate $CONDA_NAME
 set -Eeo pipefail
 cd \$SLURM_SUBMIT_DIR
 # train gene models based on RNA-Seq data
-funannotate train -i $GENOME_BASENAME.cleaned.sorted.masked.fa -o fun --left $RNASEQ_DIR/data/unaligned_reads/NN01-567_unaligned_reads_R1.fastq.gz $RNASEQ_DIR/data/unaligned_reads/NN01-579_unaligned_reads_R1.fastq.gz $RNASEQ_DIR/data/unaligned_reads/NN01-580_unaligned_reads_R1.fastq.gz --right $RNASEQ_DIR/data/unaligned_reads/NN01-567_unaligned_reads_R2.fastq.gz $RNASEQ_DIR/data/unaligned_reads/NN01-579_unaligned_reads_R2.fastq.gz $RNASEQ_DIR/Ndata/unaligned_reads/N01-580_unaligned_reads_R2.fastq.gz --stranded RF --species 'Marteilia sydneyi' --strain SRO_781 --cpus \$SLURM_CPUS_PER_TASK --max_intronlen 10000 --trinity $RNASEQ_DIR/NN01-QX_R.Trinity.trimmed_headers.fa"  > $JOB_NAME.slurm
+funannotate train -i $GENOME_BASENAME.cleaned.sorted.masked.fa -o fun --left $RNASEQ_DIR/data/unaligned_reads/NN01-567_unaligned_reads_R1.fastq.gz $RNASEQ_DIR/data/unaligned_reads/NN01-579_unaligned_reads_R1.fastq.gz $RNASEQ_DIR/data/unaligned_reads/NN01-580_unaligned_reads_R1.fastq.gz --right $RNASEQ_DIR/data/unaligned_reads/NN01-567_unaligned_reads_R2.fastq.gz $RNASEQ_DIR/data/unaligned_reads/NN01-579_unaligned_reads_R2.fastq.gz $RNASEQ_DIR/data/unaligned_reads/N01-580_unaligned_reads_R2.fastq.gz --stranded RF --species 'Marteilia sydneyi' --strain SRO_781 --cpus \$SLURM_CPUS_PER_TASK --max_intronlen 10000 --trinity $RNASEQ_DIR/NN01-QX_R.Trinity.trimmed_headers.fa --no-progress "  > $JOB_NAME.slurm
 # submit to the cluster
 sbatch $JOB_NAME.slurm
 
@@ -1416,22 +1415,99 @@ conda activate $CONDA_NAME
 set -Eeo pipefail
 cd \$SLURM_SUBMIT_DIR
 # predict gene models (optionally provide predicted proteins from M. para)
-funannotate predict -i $GENOME_BASENAME.cleaned.sorted.masked.fa -o fun --tmpdir /scratch/project/adna/tmp --species 'Marteilia sydneyi' --strain SRO_781 --cpus \$SLURM_CPUS_PER_TASK --organism other --ploidy 2 --max_intronlen 10000 --transcript_evidence $HOME/adna/Oyster_QX_Disease/QX_RNA-Seq/NN01-QX_R.Trinity.trimmed_headers.fa --protein_evidence $HOME/adna/Oyster_QX_Disease/Comparative_Genomics/GCA_039583845.1_UU_MPar_1_protein.faa $FUNANNOTATE_DB/uniprot_sprot.fasta
+funannotate predict -i $GENOME_BASENAME.cleaned.sorted.masked.fa -o fun --tmpdir /scratch/project/adna/tmp --species 'Marteilia sydneyi' --strain SRO_781 --cpus \$SLURM_CPUS_PER_TASK --organism other --ploidy 2 --max_intronlen 10000 --transcript_evidence $HOME/adna/Oyster_QX_Disease/QX_RNA-Seq/NN01-QX_R.Trinity.trimmed_headers.fa --protein_evidence $HOME/adna/Oyster_QX_Disease/Comparative_Genomics/GCA_039583845.1_UU_MPar_1_protein.faa $FUNANNOTATE_DB/uniprot_sprot.fasta -w genemark:0 codingquarry:2 --no-progress
 
 # update gene predictions
 funannotate update -i fun --cpus \$SLURM_CPUS_PER_TASK" >  $JOB_NAME.slurm
 # submit to the cluster
 sbatch $JOB_NAME.slurm
+```
+
+
+The predicted proteins in the genome were further annotated using InterProScan [@jonesInterProScanGenomescaleProtein2014; @mitchellInterPro2019Improving2019] (see setup and installation details in https://idobar.github.io/QX_bioinfo_analysis). The output from InterPro was then used as input for `funannotate annotate` command.
+
+```{bash fun-annotate}
+CONDA_NAME="funannotate"
+GENOME="$HOME/adna/Oyster_QX_Disease/Nanopore_sequencing/SRO_781/Galaxy_analysis/Galaxy_Flye_assembly.fasta"
+GENOME_BASENAME=$(basename -s .fasta $GENOME)
+RNASEQ_DIR="$HOME/adna/Oyster_QX_Disease/QX_RNA-Seq"
+# setup working directory
+WORKDIR=/scratch/project/adna/Oyster_QX_Disease/QX_genome_annotation
+cd $WORKDIR
+
+# annotate proteins with IPscan
+IPSCAN_VERSION=5.66-98.0
+mkdir -p $WORKDIR/ipscan
+JOBNAME="QX_prot_ipscan"
+NCPUS=16
+MEM=128
+WALLTIME="10:00:00"
+# prepare the commands (don't forget to remove the asterisk at the end of the proteins!)
+find $WORKDIR/fun/update_results -name "*.proteins.fa" | parallel --dry-run "sed 's/[*]//g' {} > \$TMPDIR/{/} ; apptainer exec -B /home/ibar/scratch/tools -B $WORKDIR/ipscan:/output -B \$TMPDIR:/temp $NXF_SINGULARITY_CACHEDIR/interproscan_${IPSCAN_VERSION}.sif /opt/interproscan/interproscan.sh -i /temp/{/} -d /output -dra -pa -dp -goterms -f TSV -f XML -T /temp -cpu \$SLURM_CPUS_PER_TASK ; gawk '\$4~/PANTHER/' $WORKDIR/ipscan/{/}.tsv > $WORKDIR/ipscan/{/.}.panther.tsv" > $JOBNAME.cmd
+
+# submit the job array to the cluster
+sbatch -a 1-$(cat $JOBNAME.cmd | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=$NCPUS --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOBNAME.cmd,CONDA_NAME=base  ${HOME}/bin/array.slurm
+
 
 # functional annotation
---busco_db protists
+NCPUS=16
+MEM=128
+WALLTIME="20:00:00"
+JOB_NAME="funannotate-annotate"
+# create Slurm script
+echo '#!/bin/bash --login
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --output=%x.%j.log'"
+#SBATCH --job-name=$JOB_NAME
+#SBATCH --cpus-per-task=$NCPUS
+#SBATCH --mem=${MEM}G
+#SBATCH --time=$WALLTIME
+#SBATCH --account=a_agri_genomics
+#SBATCH --partition=general
+
+source ~/.bashrc
+conda activate $CONDA_NAME
+set -Eeo pipefail
+cd \$SLURM_SUBMIT_DIR
+# Functional annotation
+funannotate annotate -i fun --tmpdir /scratch/project/adna/tmp --cpus \$SLURM_CPUS_PER_TASK --busco_db protists --no-progress --iprscan $(find $WORKDIR/ipscan -name *.proteins.fa.xml)" >  $JOB_NAME.slurm
+# submit to the cluster
+sbatch $JOB_NAME.slurm
+
+# phobius annotation
+NCPUS=16
+MEM=128
+WALLTIME="20:00:00"
+JOB_NAME="funannotate-phobius"
+# create Slurm script
+echo '#!/bin/bash --login
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --output=%x.%j.log'"
+#SBATCH --job-name=$JOB_NAME
+#SBATCH --cpus-per-task=$NCPUS
+#SBATCH --mem=${MEM}G
+#SBATCH --time=$WALLTIME
+#SBATCH --account=a_agri_genomics
+#SBATCH --partition=general
+
+source ~/.bashrc
+conda activate $CONDA_NAME
+set -Eeo pipefail
+cd \$SLURM_SUBMIT_DIR
+# Functional annotation
+funannotate remote -m phobius" >  $JOB_NAME.slurm
+# submit to the cluster
+sbatch $JOB_NAME.slurm
+funannotate remote -m phobius
 
 
 ```
 
 
 
-#### stLFR Assembly
+### stLFR Sequencing and Assembly
 
 DNA sample from QX-infected oyster (NN_781) was sent to the State Agricultural Biotechnology Centre ([SABC](https://www.murdoch.edu.au/research/sabc)) at Murdoch University (led by Prof. Rajeev Varshney) for single tube long fragment read (stLFR) sequencing on an MGI DNBSEQ-T7 [@wangEfficientUniqueCobarcoding2019a]. See this paper for a comparison of sequencing and assembly strategies, including Nanopore and stLFR [@zhangComparisonDifferentSequencing2021]. 
 The analysis was performed on QCIF Bunya HPC (see the [documentation](https://github.com/UQ-RCC/hpc-docs)). The raw stLFR reads need to be deconvulated based on the barcodes found in the reverse (R2) reads (a *whitelist* containing these barcodes can be found in the [stLFR_barcode_split repository](https://github.com/BGI-Qingdao/stLFR_barcode_split/blob/8a22b7f152b0f18a2d3db59733368cc4352cbc58/barcode_list.txt) or downloaded from [LRTK databases](https://drive.google.com/drive/folders/1XPW2avL_LZAt5yIh9tb35jZ5GfCSj7eQ)). Several pipelines have been developed to process such reads, as detailed below.
@@ -1451,7 +1527,7 @@ WHITELIST=$(find ~/etc/tools -name "barcode_list.txt")
 
 ```
 
-##### Assembly with STLFRassembly
+#### Assembly with STLFRassembly
 Another approach that may be more suitable for our scenario is implemented in pipelines that attempt to assemble metagenomes from the stLFR reads. 
 
 * The [MetaSTHD Assembly Pipeline](https://github.com/sumoii/STLFRassembly) uses several tools, such as [MetaWRAP](https://github.com/bxlab/metaWRAP) [@uritskiyMetaWRAPFlexiblePipeline2018], [WENGAN](https://github.com/adigenova/wengan) [@digenovaEfficientHybridNovo2021] and [cloudSPAdes](https://github.com/ablab/spades/tree/cloudspades-paper)[@tolstoganovCloudSPAdesAssemblySynthetic2019] to perform this task.
@@ -1603,7 +1679,9 @@ sbatch SRO_stlfr_meta.slurm
 
 ## General information
 
-This document was last updated at `r Sys.time()` using R Markdown (built with `r R.version.string`). Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. It is especially powerful at authoring documents and reports which include code and can execute code and use the results in the output. For more details on using R Markdown see <http://rmarkdown.rstudio.com> and [Rmarkdown cheatsheet](https://www.rstudio.com/wp-content/uploads/2016/03/rmarkdown-cheatsheet-2.0.pdf).
+This document was last updated at `r Sys.time()` using R Markdown (built with `r R.version.string`). The source code for this website can be found on <https://github.com/IdoBar/QX_bioinfo_analysis>.
+
+Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. It is especially powerful at authoring documents and reports which include code and can execute code and use the results in the output. For more details on using R Markdown see <http://rmarkdown.rstudio.com> and [Rmarkdown cheatsheet](https://www.rstudio.com/wp-content/uploads/2016/03/rmarkdown-cheatsheet-2.0.pdf).
 
 ------------------------------------------------------------------------
 
