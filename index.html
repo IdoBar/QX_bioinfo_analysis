@@ -11,7 +11,7 @@
 
 <meta name="author" content="Niki Nenadic and Ido Bar" />
 
-<meta name="date" content="2024-12-19" />
+<meta name="date" content="2025-01-15" />
 
 <title>Transcriptome analysis of Marteilia sydneyi and Saccostrea glomerata during QX infection in Sydney Rock Oysters</title>
 
@@ -2624,6 +2624,7 @@ window.onload = function() {
   PagedTableDoc.initAll();
 };
 </script>
+<a href="https://github.com/IdoBar/QX_bioinfo_analysis" class="github-corner" aria-label="View source on GitHub"><svg width="80" height="80" viewBox="0 0 250 250" style="fill:#1E80F0; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z" /><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm" /><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body" /></svg></a><style>.github-corner:hover .octo-arm{animation:octocat-wave 560ms ease-in-out}@keyframes octocat-wave{0%,100%{transform:rotate(0)}20%,60%{transform:rotate(-25deg)}40%,80%{transform:rotate(10deg)}}@media (max-width:500px){.github-corner:hover .octo-arm{animation:none}.github-corner .octo-arm{animation:octocat-wave 560ms ease-in-out}}</style>
 
 <style type="text/css">
 code{white-space: pre-wrap;}
@@ -2943,13 +2944,13 @@ border-radius: 0px;
 
 <h1 class="title toc-ignore">Transcriptome analysis of <em>Marteilia sydneyi</em> and <em>Saccostrea glomerata</em> during QX infection in Sydney Rock Oysters</h1>
 <h4 class="author">Niki Nenadic and Ido Bar</h4>
-<h4 class="date">19 December 2024</h4>
+<h4 class="date">15 January 2025</h4>
 
 </div>
 
 
-<div id="experimental-design" class="section level1">
-<h1>Experimental Design</h1>
+<div id="research-design" class="section level1">
+<h1>Research Design</h1>
 <div id="aims" class="section level2">
 <h2>Aims</h2>
 <ul>
@@ -2967,10 +2968,8 @@ border-radius: 0px;
 </div>
 <div id="transcriptome-assembly-of-m.-sydneyi-and-saccostrea-glomerata" class="section level1">
 <h1>Transcriptome assembly of <em>M. sydneyi</em> and <em>Saccostrea glomerata</em></h1>
-<div id="analysis-pipeline" class="section level2">
-<h2>Analysis Pipeline</h2>
-<div id="general-overview" class="section level3">
-<h3>General overview:</h3>
+<div id="general-overview-of-analysis-pipeline" class="section level2">
+<h2>General overview of analysis pipeline:</h2>
 <ol style="list-style-type: decimal">
 <li>Data pre-processing:
 <ol style="list-style-type: lower-alpha">
@@ -2990,12 +2989,14 @@ border-radius: 0px;
 <li>Host transcriptome differential expression</li>
 <li>Summary statistics and visualisation</li>
 </ol>
-</div>
 <div id="methods" class="section level3">
 <h3>Methods</h3>
-<div id="rna-extraction" class="section level4">
-<h4>RNA extraction</h4>
-<p>RNA was extracted from the digestive gland of 3 healthy Sydney Rock Oysters (SRO, <em>Saccostrea glomerata</em>) and 3 SRO infected with QX disease (as confirmed by PCR assay on DNA extracted from each tissue) using the Trizol method. The RNA was sent for Illumina paired-end sequencing, generating 150bp reads (Macrogen, Korea).</p>
+<div id="rna-extraction-and-sequencing" class="section level4">
+<h4>RNA extraction and sequencing</h4>
+<p>RNA was extracted from the digestive gland of 3 healthy Sydney Rock Oysters (SRO, <em>Saccostrea glomerata</em>) and 3 SRO infected with QX disease (as confirmed by PCR assay on DNA extracted from each tissue) using the Trizol method. The RNA was sent for sequencing on an Illumina NovaSeq 6000, generating 150 bp paired-end reads (Macrogen, Korea).</p>
+</div>
+<div id="processing-rna-seq-reads" class="section level4">
+<h4>Processing RNA-Seq reads</h4>
 <p>The reads were downloaded to the Griffith University High Performance Computing cluster ‘Gowonda’ and the University of Queensland High Performance Computing cluster ‘Bunya’ (access provided by The Queensland Cyber Infrastructure Foundation (QCIF)) for bioinformatics processing and analyses, following the guidelines by Harvard Informatics (see <a href="https://github.com/harvardinformatics/TranscriptomeAssemblyTools">link</a>) .
 These included error-correction with Rcorrector v1.5.0 <span class="citation">(Song and Florea 2015)</span> of the reads from each set (healthy SRO and QX-infected SRO) and removal of “unfixable” reads.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="co"># setup environment</span></span>
@@ -3194,6 +3195,7 @@ These included error-correction with Rcorrector v1.5.0 <span class="citation">(S
 <code>sed -ri.bak &#39;s|SIGNALP} = &#39;\&#39;&#39;.+|SIGNALP} = &quot;\$FindBin::RealBin&quot;|; s/BEGIN/use FindBin\; \nBEGIN/; s/MAX_ALLOWED_ENTRIES=.+/MAX_ALLOWED_ENTRIES=2000000;/&#39; signalp</code></li>
 <li>Process <code>summary_custom_uniprot</code> fails because of weird table merging and file redundancies done in bash. I edited <code>Tranbspi/bin/custom_uniprot_hits.R</code> to perform these tasks and export the <code>csv</code> file with the results.</li>
 </ol>
+<p>A modified version of TransPi with these fixes is available at <a href="https://github.com/IdoBar/TransPi" class="uri">https://github.com/IdoBar/TransPi</a>.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="co"># install TransPi</span></span>
 <span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="bu">cd</span> /home/ibar/adna/tools <span class="co">#Bunya</span></span>
 <span id="cb3-3"><a href="#cb3-3" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/idobar/TransPi.git <span class="co"># my version</span></span>
@@ -3222,8 +3224,7 @@ These included error-correction with Rcorrector v1.5.0 <span class="citation">(S
 <span id="cb3-26"><a href="#cb3-26" tabindex="-1"></a><span class="fu">chmod</span> +x nextflow-21.10.4-all</span>
 <span id="cb3-27"><a href="#cb3-27" tabindex="-1"></a><span class="ex">aria2c</span> <span class="at">-x5</span> https://github.com/nextflow-io/nextflow/releases/download/v22.11.1-edge/nextflow-22.11.1-edge-all</span>
 <span id="cb3-28"><a href="#cb3-28" tabindex="-1"></a><span class="fu">chmod</span> +x nextflow-22.11.1-edge-all <span class="co"># this is the only version that supports DSL1, Apptainer and has an update Tower plugin!</span></span></code></pre></div>
-<div id="test-transpi-on-subset-of-reads-from-one-sample" class="section level5">
-<h5>Test TransPi on subset of reads from one sample</h5>
+<p>Test TransPi on subset of reads from one sample</p>
 <div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="co"># install bbtools</span></span>
 <span id="cb4-2"><a href="#cb4-2" tabindex="-1"></a><span class="ex">mamba</span> install <span class="at">-n</span> gwas bbtools</span>
 <span id="cb4-3"><a href="#cb4-3" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> ~/adna/sandbox/TransPi_test</span>
@@ -3249,9 +3250,7 @@ These included error-correction with Rcorrector v1.5.0 <span class="citation">(S
 <span id="cb4-23"><a href="#cb4-23" tabindex="-1"></a><span class="ex">sbatch</span> downsample_reads.slurm</span>
 <span id="cb4-24"><a href="#cb4-24" tabindex="-1"></a><span class="co"># conda activate nf21 # nextflow version 21.10.6</span></span>
 <span id="cb4-25"><a href="#cb4-25" tabindex="-1"></a><span class="ex">nextflow-22.11.1-edge-all</span> run /home/ibar/adna/tools/TransPi/TransPi.nf <span class="at">-with-tower</span> <span class="at">--all</span> <span class="at">-profile</span> apptainer,TransPiContainer,bunya <span class="at">-c</span> /home/ibar/.nextflow/bunya.config <span class="at">--k</span> 25,35 <span class="at">--maxReadLen</span> 150 <span class="at">--pipeInstall</span> /scratch/project/adna/tools/TransPi <span class="at">--allBuscos</span> <span class="at">--buscoDist</span> <span class="at">--reads</span> <span class="st">&#39;./NN01-561_[1,2].downsampled.fastq.gz&#39;</span></span></code></pre></div>
-</div>
-<div id="run-transpi-on-the-combined-and-corrected-reads-from-each-experimental-group" class="section level5">
-<h5>Run TransPi on the combined and corrected reads from each experimental group</h5>
+<p>Run TransPi on the combined and corrected reads from each experimental group</p>
 <div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="co"># WORKDIR=/scratch/s2978925/aDNA/niki_qx #Gowonda</span></span>
 <span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a><span class="va">WORKDIR</span><span class="op">=</span>/home/ibar/adna/Oyster_QX_Disease <span class="co"># Bunya</span></span>
 <span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a><span class="co"># mamba create -n nf-dsl1 nextflow=22.10.6 # need an older version (&lt;22) to avoid Apptainer warnings</span></span>
@@ -3269,9 +3268,7 @@ These included error-correction with Rcorrector v1.5.0 <span class="citation">(S
 <span id="cb5-15"><a href="#cb5-15" tabindex="-1"></a></span>
 <span id="cb5-16"><a href="#cb5-16" tabindex="-1"></a><span class="co"># start the run (Gowonda)</span></span>
 <span id="cb5-17"><a href="#cb5-17" tabindex="-1"></a><span class="co"># nextflow run $WORKDIR/TransPi/TransPi.nf -with-tower --all --reads &#39;./input_files/*_R[1,2]*.fastq.gz&#39;  -profile singularity,TransPiContainer,gowonda -c $HOME/.nextflow/GU.config --rRNAfilter --rRNAdb $WORKDIR/TransPi/DBs/rrna_db/SILVA_138.1_Small_and_Large_SURef_NR99_tax_silva_trunc.fasta --withSignalP --signalp $HOME/etc/tools/Annotation/signalp-4.1/signalp --withTMHMM --tmhmm $HOME/etc/tools/Annotation/tmhmm-2.0c/bin/tmhmm --withRnammer --rnam $HOME/etc/tools/Annotation/rnammer-1.2/rnammer --k 25,35,41,53,65,71,83 --maxReadLen 150 --pipeInstall $WORKDIR/TransPi --allBuscos --buscoDist -resume</span></span></code></pre></div>
-</div>
-<div id="run-evidentialgene-step-of-transpi-to-collapse-redundant-transcripts" class="section level5">
-<h5>Run EvidentialGene step of TransPi to collapse redundant transcripts</h5>
+<p>Run EvidentialGene step of TransPi to collapse redundant transcripts</p>
 <div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="va">JOBNAME</span><span class="op">=</span><span class="st">&quot;onlyEvigene&quot;</span></span>
 <span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="va">NCORES</span><span class="op">=</span>4</span>
 <span id="cb6-3"><a href="#cb6-3" tabindex="-1"></a><span class="va">MEM</span><span class="op">=</span>24</span>
@@ -3290,9 +3287,9 @@ These included error-correction with Rcorrector v1.5.0 <span class="citation">(S
 <span id="cb6-16"><a href="#cb6-16" tabindex="-1"></a></span>
 <span id="cb6-17"><a href="#cb6-17" tabindex="-1"></a><span class="co"># Create </span></span></code></pre></div>
 </div>
-<div id="annotate-chosen-assemblies" class="section level5">
-<h5>Annotate chosen assemblies</h5>
-<p>The assemblies were annotated with TransPi, using homology searches (NCBI BLAST, <span class="citation">Buchfink <em>et al.</em> (2015)</span> and DIAMOND) against the Uniprot_Sprot protein database, as well as using HMM search against the Pfam database of protein families. In addition, signal peptides, ribosomal genes and transmembrane topology were predicted with SignalP, Rnammer and TMHMM, respectively.</p>
+<div id="annotate-chosen-assemblies" class="section level4">
+<h4>Annotate chosen assemblies</h4>
+<p>The assemblies were annotated with TransPi, using homology searches (BLAST <span class="citation">Camacho <em>et al.</em> (2009)</span>, and DIAMOND <span class="citation">Buchfink <em>et al.</em> (2015)</span>) against the Uniprot_Sprot protein database, as well as using HMM search against the Pfam database of protein families. In addition, signal peptides, ribosomal genes and transmembrane topology were predicted with SignalP v4.1 <span class="citation">(Petersen <em>et al.</em> 2011)</span>, Rnammer and TMHMM <span class="citation">(Krogh <em>et al.</em> 2001)</span>, respectively <span class="citation">(Emanuelsson <em>et al.</em> 2007)</span>.</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="va">WORKDIR</span><span class="op">=</span>/home/ibar/adna/Oyster_QX_Disease <span class="co"># Bunya</span></span>
 <span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/Annotation/onlyAnn</span>
 <span id="cb7-3"><a href="#cb7-3" tabindex="-1"></a><span class="fu">ln</span> <span class="at">-s</span> <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/results/assemblies/<span class="pp">*</span>Trinity.fa <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/Annotation/onlyAnn/</span>
@@ -3313,8 +3310,9 @@ These included error-correction with Rcorrector v1.5.0 <span class="citation">(S
 <span id="cb7-18"><a href="#cb7-18" tabindex="-1"></a><span class="ex">sbatch</span> <span class="at">-a</span> 1-<span class="va">$(</span><span class="fu">cat</span> <span class="va">$JOBNAME</span>.cmds <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span><span class="va">)</span>%10 <span class="at">--job-name</span><span class="op">=</span><span class="va">$JOBNAME</span> <span class="at">--cpus-per-task</span><span class="op">=</span><span class="va">$NCORES</span> <span class="at">--mem</span><span class="op">=</span><span class="va">${MEM}</span>G <span class="at">--time</span><span class="op">=</span><span class="va">$WALLTIME</span> <span class="at">--export</span><span class="op">=</span>ALL,PATH=<span class="va">$PATH</span>,CMDS_FILE=<span class="va">$JOBNAME</span>.cmds,CONDA_NAME=genomics <span class="va">${WORKDIR}</span>/array.slurm </span>
 <span id="cb7-19"><a href="#cb7-19" tabindex="-1"></a></span>
 <span id="cb7-20"><a href="#cb7-20" tabindex="-1"></a><span class="ex">rclone</span> copy <span class="at">-P</span> <span class="at">--dry-run</span> <span class="at">--include</span> <span class="st">&quot;*Trinity*&quot;</span> <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/results/assemblies GURS_shared:Oyster_QX_Disease/QX_RNA-Seq/SRO_TransPi_assembly/results/assemblies</span></code></pre></div>
-<div id="annotate-chosen-assemblies-with-blast" class="section level6">
-<h6>Annotate chosen assemblies with BLAST</h6>
+</div>
+<div id="additional-annotation-of-chosen-assemblies" class="section level4">
+<h4>Additional annotation of chosen assemblies</h4>
 <p>In addition to the annotation performed with TransPi, the transcriptomes were annotated against the non-redundant nucleotide and protein databases of the NCBI (<code>nt</code> and <code>nr</code>, respectively) to achieve more accurate species-specific annotations.</p>
 <div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" tabindex="-1"></a><span class="va">CONDA_NAME</span><span class="op">=</span>genomics</span>
 <span id="cb8-2"><a href="#cb8-2" tabindex="-1"></a><span class="ex">mamba</span> install <span class="at">-n</span> <span class="va">$CONDA_NAME</span> gsutil awscli blast</span>
@@ -3370,7 +3368,7 @@ These included error-correction with Rcorrector v1.5.0 <span class="citation">(S
 <span id="cb8-52"><a href="#cb8-52" tabindex="-1"></a></span>
 <span id="cb8-53"><a href="#cb8-53" tabindex="-1"></a><span class="co"># submit the job array to the cluster</span></span>
 <span id="cb8-54"><a href="#cb8-54" tabindex="-1"></a><span class="ex">sbatch</span> <span class="at">-a</span> 1-<span class="va">$(</span><span class="fu">cat</span> <span class="va">$JOBNAME</span>.cmds <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span><span class="va">)</span>%10 <span class="at">--job-name</span><span class="op">=</span><span class="va">$JOBNAME</span> <span class="at">--cpus-per-task</span><span class="op">=</span><span class="va">$NCORES</span> <span class="at">--mem</span><span class="op">=</span><span class="va">${MEM}</span>G <span class="at">--time</span><span class="op">=</span><span class="va">$WALLTIME</span> <span class="at">--export</span><span class="op">=</span>ALL,CMDS_FILE=<span class="va">$JOBNAME</span>.cmds,CONDA_NAME=<span class="va">$CONDA_NAME</span> <span class="at">--dependency</span><span class="op">=</span>afterok:8070286  <span class="va">${WORKDIR}</span>/array.slurm</span></code></pre></div>
-<p>Regular BLAST is just too slow (mainly on the protein level), so we used a Nextflow implementation of BLAST that breaks down the input transcriptome into “chunks” and processes them in parallel on the HPC cluster.</p>
+<p>Regular BLAST is just too slow (mainly on the protein level), so we used a Nextflow implementation of BLAST (v2.16.0) that breaks down the input transcriptome into “chunks” and processes them in parallel on the HPC cluster.</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" tabindex="-1"></a><span class="va">WORKDIR</span><span class="op">=</span>/home/ibar/adna/Oyster_QX_Disease</span>
 <span id="cb9-2"><a href="#cb9-2" tabindex="-1"></a><span class="bu">cd</span> <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/Annotation</span>
 <span id="cb9-3"><a href="#cb9-3" tabindex="-1"></a><span class="va">JOBNAME</span><span class="op">=</span>blastn_tax_nf</span>
@@ -3389,9 +3387,6 @@ These included error-correction with Rcorrector v1.5.0 <span class="citation">(S
 <span id="cb9-16"><a href="#cb9-16" tabindex="-1"></a></span>
 <span id="cb9-17"><a href="#cb9-17" tabindex="-1"></a><span class="co"># submit the job array to the cluster</span></span>
 <span id="cb9-18"><a href="#cb9-18" tabindex="-1"></a><span class="ex">sbatch</span> <span class="at">-a</span> 1-<span class="va">$(</span><span class="fu">cat</span> <span class="va">$JOBNAME</span>.cmds <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span><span class="va">)</span>%10 <span class="at">--job-name</span><span class="op">=</span><span class="va">$JOBNAME</span> <span class="at">--cpus-per-task</span><span class="op">=</span><span class="va">$NCORES</span> <span class="at">--mem</span><span class="op">=</span><span class="va">${MEM}</span>G <span class="at">--time</span><span class="op">=</span><span class="va">$WALLTIME</span> <span class="at">--export</span><span class="op">=</span>ALL,CMDS_FILE=<span class="va">$JOBNAME</span>.cmds,CONDA_NAME=base <span class="va">${WORKDIR}</span>/array.slurm</span></code></pre></div>
-</div>
-<div id="annotate-predicted-proteins-with-diamond" class="section level6">
-<h6>Annotate predicted proteins with DIAMOND</h6>
 <p>Even when using a split-combine strategy using <code>blast-nf</code>, BLASTp is just too slow (it takes around 50 hours to process a chunk of 500 proteins). Therefore we also used DIAMOND, which can be x1,000 quicker than BLAST <span class="citation">(Buchfink <em>et al.</em> 2015)</span>.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" tabindex="-1"></a><span class="va">WORKDIR</span><span class="op">=</span>/home/ibar/adna/Oyster_QX_Disease</span>
 <span id="cb10-2"><a href="#cb10-2" tabindex="-1"></a><span class="bu">cd</span> /scratch/project/adna/tools</span>
@@ -3444,7 +3439,7 @@ These included error-correction with Rcorrector v1.5.0 <span class="citation">(S
 <span id="cb10-49"><a href="#cb10-49" tabindex="-1"></a><span class="co"># submit the job array to the cluster</span></span>
 <span id="cb10-50"><a href="#cb10-50" tabindex="-1"></a><span class="ex">sbatch</span> <span class="at">-a</span> 1-2,4 <span class="at">--job-name</span><span class="op">=</span><span class="va">$JOBNAME</span> <span class="at">--cpus-per-task</span><span class="op">=</span><span class="va">$NCORES</span> <span class="at">--mem</span><span class="op">=</span><span class="va">${MEM}</span>G <span class="at">--time</span><span class="op">=</span><span class="va">$WALLTIME</span> <span class="at">--export</span><span class="op">=</span>ALL,CMDS_FILE=<span class="va">$JOBNAME</span>.cmds,CONDA_NAME=base <span class="va">${WORKDIR}</span>/array.slurm</span>
 <span id="cb10-51"><a href="#cb10-51" tabindex="-1"></a><span class="co"># each job took roughly 3:30 hours</span></span></code></pre></div>
-<p>Using the Nextflow-enabled version of DIAMOND (reducing the time to 1.5h)</p>
+<p>Using <a href="https://github.com/IdoBar/nf-blast">nf-blast</a>, a Nextflow-enabled version of DIAMOND v2.1.9 (reducing the time to 1.5h)</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" tabindex="-1"></a><span class="ex">start_long_interactive_job</span> <span class="co"># start interactive job on Bunya</span></span>
 <span id="cb11-2"><a href="#cb11-2" tabindex="-1"></a><span class="va">WORKDIR</span><span class="op">=</span>/home/ibar/adna/Oyster_QX_Disease</span>
 <span id="cb11-3"><a href="#cb11-3" tabindex="-1"></a><span class="va">JOBNAME</span><span class="op">=</span>nf_diamond_blastp_tax</span>
@@ -3463,9 +3458,9 @@ These included error-correction with Rcorrector v1.5.0 <span class="citation">(S
 <span id="cb11-16"><a href="#cb11-16" tabindex="-1"></a><span class="va">WALLTIME</span><span class="op">=</span>250:00:00</span>
 <span id="cb11-17"><a href="#cb11-17" tabindex="-1"></a><span class="ex">sbatch</span> <span class="at">-a</span> 1-<span class="va">$(</span><span class="fu">cat</span> <span class="va">$JOBNAME</span>.cmds <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span><span class="va">)</span>%10 <span class="at">--job-name</span><span class="op">=</span><span class="va">$JOBNAME</span> <span class="at">--cpus-per-task</span><span class="op">=</span><span class="va">$NCORES</span> <span class="at">--mem</span><span class="op">=</span><span class="va">${MEM}</span>G <span class="at">--time</span><span class="op">=</span><span class="va">$WALLTIME</span> <span class="at">--export</span><span class="op">=</span>ALL,CMDS_FILE=<span class="va">$JOBNAME</span>.cmds,CONDA_NAME=base <span class="va">${WORKDIR}</span>/array.slurm</span></code></pre></div>
 </div>
-<div id="functional-annotation-of-predicted-proteins-with-interpro" class="section level6">
-<h6>Functional annotation of predicted proteins with InterPro</h6>
-<p>The predicted proteins in the transcriptomes were further annotated using InterProScan (or <a href="https://github.com/guigolab/FA-nf">FA-nf</a>) to assign protein families, motifs and ontologies to assist with transcript-to-gene annotation.
+<div id="functional-annotation-of-predicted-proteins" class="section level4">
+<h4>Functional annotation of predicted proteins</h4>
+<p>The predicted proteins in the transcriptomes were further annotated using InterProScan v5.66-98.0 <span class="citation">(Jones <em>et al.</em> 2014; Mitchell <em>et al.</em> 2019)</span> to assign protein families, motifs and ontologies to assist with transcript-to-gene annotation. (An alternative method is with <a href="https://github.com/guigolab/FA-nf">FA-nf</a>)
 Notice the issues mentioned above with SignalP and TMHMM and a new one for Phobius (see discussions and solutions on <a href="https://github.com/nextgenusfs/funannotate/issues/696#issuecomment-1057663190">GitHub</a> and <a href="https://www.biostars.org/p/238642/">BioStar</a>)</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="bu">cd</span> ~/adna/tools</span>
 <span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="ex">start_interactive_job</span> <span class="co"># start an interactive job to download interproscan</span></span>
@@ -3528,9 +3523,8 @@ Notice the issues mentioned above with SignalP and TMHMM and a new one for Phobi
 <span id="cb12-59"><a href="#cb12-59" tabindex="-1"></a><span class="ex">rclone</span> copy <span class="at">-P</span> <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/Annotation/Annotation_results/ipscan GURS_shared:Oyster_QX_Disease/QX_RNA-Seq/SRO_TransPi_assembly/Annotation_results/ipscan</span></code></pre></div>
 <p>These annotation tables were added to the Trinotate database of the assemblies.</p>
 </div>
-</div>
-<div id="assess-the-quality-of-assemblies" class="section level5">
-<h5>Assess the quality of assemblies</h5>
+<div id="quality-assessments-of-assemblies" class="section level4">
+<h4>Quality assessments of assemblies</h4>
 <p>The transcriptome assemblies were assessed and compared using <a href="https://github.com/ablab/rnaquast">rnaQuast</a> v2.2.3 <span class="citation">(Bushmanova <em>et al.</em> 2016)</span>, <a href="http://hibberdlab.com/transrate">TransRate</a> v1.0.3 <span class="citation">(Smith-Unna <em>et al.</em> 2016)</span> and <a href="https://deweylab.biostat.wisc.edu/detonate/">DETONATE</a> v1.11 <span class="citation">(Li <em>et al.</em> 2014)</span>, as suggested in the Trinity <a href="https://github.com/trinityrnaseq/trinityrnaseq/wiki/Transcriptome-Assembly-Quality-Assessment">documentation</a> and by <span class="citation">Behera <em>et al.</em> (2021)</span>.</p>
 <p>The transcripts were compared to the Pacific Oyster (<em>Crassostrea gigas</em>) proteins, which were obtained from NCBI (Accession <a href="https://www.ncbi.nlm.nih.gov/datasets/genome/GCA_902806645.1/">GCA_902806645.1</a>) <span class="citation">(Peñaloza <em>et al.</em> 2021)</span></p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" tabindex="-1"></a><span class="va">CONDA_NAME</span><span class="op">=</span>rnaseq</span>
@@ -3577,93 +3571,89 @@ Notice the issues mentioned above with SignalP and TMHMM and a new one for Phobi
 <span id="cb13-42"><a href="#cb13-42" tabindex="-1"></a><span class="co"># --merge-assemblies {sample}.merged.fa </span></span>
 <span id="cb13-43"><a href="#cb13-43" tabindex="-1"></a><span class="co"># submit the job array to the cluster</span></span>
 <span id="cb13-44"><a href="#cb13-44" tabindex="-1"></a><span class="ex">sbatch</span> <span class="at">-a</span> 1-<span class="va">$(</span><span class="fu">cat</span> <span class="va">$JOBNAME</span>.cmds <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span><span class="va">)</span>%10 <span class="at">--job-name</span><span class="op">=</span><span class="va">$JOBNAME</span> <span class="at">--cpus-per-task</span><span class="op">=</span><span class="va">$NCORES</span> <span class="at">--mem</span><span class="op">=</span><span class="va">${MEM}</span>G <span class="at">--time</span><span class="op">=</span><span class="va">$WALLTIME</span> <span class="at">--export</span><span class="op">=</span>ALL,CMDS_FILE=<span class="va">$JOBNAME</span>.cmds,CONDA_NAME=<span class="va">$CONDA_NAME</span> <span class="va">${WORKDIR}</span>/array.slurm</span></code></pre></div>
+<!-- ### SRO transcriptome assembly with ORP -->
+<!-- The SRO transcriptome of non-infected (control) tissues was also assembled with the Oyster River Protocol pipeline [@macmanesOysterRiverProtocol2018a]. -->
+<!-- ```{bash orp-assembly} -->
+<!-- # prepare slurm script -->
+<!-- WORKDIR='/scratch/project/adna/Oyster_QX_Disease' -->
+<!-- JOBNAME="SRO_orp_pipeline" -->
+<!-- NCORES=24 -->
+<!-- MEM=150 -->
+<!-- WALLTIME=200:00:00 -->
+<!-- mkdir -p $WORKDIR/$JOBNAME && cd $WORKDIR/$JOBNAME -->
+<!-- echo '#!/bin/bash --login'" -->
+<!-- #SBATCH --job-name=$JOBNAME -->
+<!-- #SBATCH --nodes=1 -->
+<!-- #SBATCH --ntasks=1 -->
+<!-- #SBATCH --output=%x.%j.log -->
+<!-- #SBATCH --cpus-per-task=$NCORES -->
+<!-- #SBATCH --mem=${MEM}G -->
+<!-- #SBATCH --time=$WALLTIME -->
+<!-- #SBATCH --account=a_agri_genomics -->
+<!-- #SBATCH --partition=general -->
+<!-- source ~/.bashrc -->
+<!-- set -Eeo pipefail -->
+<!-- cd \$SLURM_SUBMIT_DIR -->
+<!-- apptainer exec -B $WORKDIR:/scratch --no-mount /home $NXF_APPTAINER_CACHEDIR/docker.io-macmaneslab-orp-2.3.3.img bash -c \"source /home/orp/Oyster_River_Protocol/software/anaconda/install/bin/activate orp && unset -f which && cd /scratch/$JOBNAME && /home/orp/Oyster_River_Protocol/oyster.mk TPM_FILT=1 CPU=\$SLURM_CPUS_PER_TASK MEM=$MEM  READ1=/scratch/SRO_TransPi_assembly/input_files/unfixrm_SRO_control_R1.cor.fastq.gz READ2=/scratch/SRO_TransPi_assembly/input_files/unfixrm_SRO_control_R2.cor.fastq.gz RUNOUT=SRO_trans_orp\" " >  $JOBNAME.slurm -->
+<!-- # submit the job -->
+<!-- sbatch $JOBNAME.slurm -->
+<!-- ``` -->
 </div>
-</div>
-</div>
-<div id="sro-transcriptome-assembly-with-orp" class="section level3">
-<h3>SRO transcriptome assembly with ORP</h3>
-<p>The SRO transcriptome of non-infected (control) tissues was also assembled with the Oyster River Protocol pipeline <span class="citation">(MacManes 2018)</span>.</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="co"># prepare slurm script</span></span>
-<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="va">WORKDIR</span><span class="op">=</span><span class="st">&#39;/scratch/project/adna/Oyster_QX_Disease&#39;</span></span>
-<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="va">JOBNAME</span><span class="op">=</span><span class="st">&quot;SRO_orp_pipeline&quot;</span></span>
-<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="va">NCORES</span><span class="op">=</span>24</span>
-<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="va">MEM</span><span class="op">=</span>150</span>
-<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a><span class="va">WALLTIME</span><span class="op">=</span>200:00:00</span>
-<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">$WORKDIR</span>/<span class="va">$JOBNAME</span> <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> <span class="va">$WORKDIR</span>/<span class="va">$JOBNAME</span></span>
-<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a></span>
-<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&#39;#!/bin/bash --login&#39;&quot;</span></span>
-<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="st">#SBATCH --job-name=</span><span class="va">$JOBNAME</span></span>
-<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="st">#SBATCH --nodes=1</span></span>
-<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a><span class="st">#SBATCH --ntasks=1</span></span>
-<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a><span class="st">#SBATCH --output=%x.%j.log</span></span>
-<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a><span class="st">#SBATCH --cpus-per-task=</span><span class="va">$NCORES</span></span>
-<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a><span class="st">#SBATCH --mem=</span><span class="va">${MEM}</span><span class="st">G</span></span>
-<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a><span class="st">#SBATCH --time=</span><span class="va">$WALLTIME</span></span>
-<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a><span class="st">#SBATCH --account=a_agri_genomics</span></span>
-<span id="cb14-18"><a href="#cb14-18" tabindex="-1"></a><span class="st">#SBATCH --partition=general</span></span>
-<span id="cb14-19"><a href="#cb14-19" tabindex="-1"></a></span>
-<span id="cb14-20"><a href="#cb14-20" tabindex="-1"></a><span class="st">source ~/.bashrc</span></span>
-<span id="cb14-21"><a href="#cb14-21" tabindex="-1"></a><span class="st">set -Eeo pipefail</span></span>
-<span id="cb14-22"><a href="#cb14-22" tabindex="-1"></a><span class="st">cd </span><span class="dt">\$</span><span class="st">SLURM_SUBMIT_DIR</span></span>
-<span id="cb14-23"><a href="#cb14-23" tabindex="-1"></a></span>
-<span id="cb14-24"><a href="#cb14-24" tabindex="-1"></a><span class="st">apptainer exec -B </span><span class="va">$WORKDIR</span><span class="st">:/scratch --no-mount /home </span><span class="va">$NXF_APPTAINER_CACHEDIR</span><span class="st">/docker.io-macmaneslab-orp-2.3.3.img bash -c </span><span class="dt">\&quot;</span><span class="st">source /home/orp/Oyster_River_Protocol/software/anaconda/install/bin/activate orp &amp;&amp; unset -f which &amp;&amp; cd /scratch/</span><span class="va">$JOBNAME</span><span class="st"> &amp;&amp; /home/orp/Oyster_River_Protocol/oyster.mk TPM_FILT=1 CPU=</span><span class="dt">\$</span><span class="st">SLURM_CPUS_PER_TASK MEM=</span><span class="va">$MEM</span><span class="st">  READ1=/scratch/SRO_TransPi_assembly/input_files/unfixrm_SRO_control_R1.cor.fastq.gz READ2=/scratch/SRO_TransPi_assembly/input_files/unfixrm_SRO_control_R2.cor.fastq.gz RUNOUT=SRO_trans_orp</span><span class="dt">\&quot;</span><span class="st"> &quot;</span> <span class="op">&gt;</span>  <span class="va">$JOBNAME</span>.slurm</span>
-<span id="cb14-25"><a href="#cb14-25" tabindex="-1"></a></span>
-<span id="cb14-26"><a href="#cb14-26" tabindex="-1"></a><span class="co"># submit the job</span></span>
-<span id="cb14-27"><a href="#cb14-27" tabindex="-1"></a><span class="ex">sbatch</span> <span class="va">$JOBNAME</span>.slurm</span></code></pre></div>
 <div id="gene-expression-analysis" class="section level4">
 <h4>Gene Expression Analysis</h4>
-<p>The chosen most representative transcriptome assembly for SRO (Rcorrected SRO non-infected assembly) was used as reference to quantify gene/transcript abundance using <a href="https://salmon.readthedocs.io/en/latest/salmon.html">Salmon</a> <span class="citation">Love <em>et al.</em> (2018)</span>.</p>
+<p>The chosen most representative transcriptome assembly for SRO (Rcorrected SRO non-infected TransPi assembly) was used as reference to quantify gene/transcript abundance using <a href="https://salmon.readthedocs.io/en/latest/salmon.html">Salmon</a> <span class="citation">(Patro <em>et al.</em> 2017; Love <em>et al.</em> 2018)</span>.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" tabindex="-1"></a><span class="va">CONDA_NAME</span><span class="op">=</span>genomics</span>
+<span id="cb14-2"><a href="#cb14-2" tabindex="-1"></a><span class="ex">mamba</span> install <span class="at">-n</span> <span class="va">$CONDA_NAME</span> kallisto salmon </span>
+<span id="cb14-3"><a href="#cb14-3" tabindex="-1"></a><span class="va">WORKDIR</span><span class="op">=</span>/home/ibar/adna/Oyster_QX_Disease</span>
+<span id="cb14-4"><a href="#cb14-4" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/Gene_expression</span>
+<span id="cb14-5"><a href="#cb14-5" tabindex="-1"></a><span class="bu">cd</span> !$</span>
+<span id="cb14-6"><a href="#cb14-6" tabindex="-1"></a></span>
+<span id="cb14-7"><a href="#cb14-7" tabindex="-1"></a><span class="va">JOBNAME</span><span class="op">=</span><span class="st">&quot;Salmon_index&quot;</span></span>
+<span id="cb14-8"><a href="#cb14-8" tabindex="-1"></a><span class="va">NCORES</span><span class="op">=</span>12</span>
+<span id="cb14-9"><a href="#cb14-9" tabindex="-1"></a><span class="va">MEM</span><span class="op">=</span>64</span>
+<span id="cb14-10"><a href="#cb14-10" tabindex="-1"></a><span class="va">WALLTIME</span><span class="op">=</span>10:00:00</span>
+<span id="cb14-11"><a href="#cb14-11" tabindex="-1"></a><span class="ex">parallel</span> <span class="at">--dry-run</span> <span class="st">&quot;salmon index -t {} -i {/.}.index&quot;</span> ::: <span class="va">$(</span><span class="fu">ls</span> <span class="at">-1</span> <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/results/assemblies/<span class="pp">*</span>Trinity.fa <span class="va">)</span> <span class="op">&gt;</span> <span class="va">$JOBNAME</span>.cmds </span>
+<span id="cb14-12"><a href="#cb14-12" tabindex="-1"></a></span>
+<span id="cb14-13"><a href="#cb14-13" tabindex="-1"></a><span class="co"># submit the job array to the cluster</span></span>
+<span id="cb14-14"><a href="#cb14-14" tabindex="-1"></a><span class="ex">sbatch</span> <span class="at">-a</span> 1-<span class="va">$(</span><span class="fu">cat</span> <span class="va">$JOBNAME</span>.cmds <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span><span class="va">)</span>%10 <span class="at">--job-name</span><span class="op">=</span><span class="va">$JOBNAME</span> <span class="at">--cpus-per-task</span><span class="op">=</span><span class="va">$NCORES</span> <span class="at">--mem</span><span class="op">=</span><span class="va">${MEM}</span>G <span class="at">--time</span><span class="op">=</span><span class="va">$WALLTIME</span> <span class="at">--export</span><span class="op">=</span>ALL,CMDS_FILE=<span class="va">$JOBNAME</span>.cmds,CONDA_NAME=<span class="va">$CONDA_NAME</span> <span class="va">${WORKDIR}</span>/array.slurm</span>
+<span id="cb14-15"><a href="#cb14-15" tabindex="-1"></a></span>
+<span id="cb14-16"><a href="#cb14-16" tabindex="-1"></a><span class="va">DATE</span><span class="op">=</span><span class="kw">`</span><span class="fu">date</span> +%d_%m_%Y<span class="kw">`</span></span>
+<span id="cb14-17"><a href="#cb14-17" tabindex="-1"></a><span class="va">JOBNAME</span><span class="op">=</span><span class="st">&quot;Salmon_quant_</span><span class="va">$DATE</span><span class="st">&quot;</span></span>
+<span id="cb14-18"><a href="#cb14-18" tabindex="-1"></a><span class="va">RUNDIR</span><span class="op">=</span><span class="va">$WORKDIR</span>/SRO_TransPi_assembly/Gene_expression/<span class="va">$JOBNAME</span></span>
+<span id="cb14-19"><a href="#cb14-19" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">$RUNDIR</span> <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> <span class="va">$RUNDIR</span></span>
+<span id="cb14-20"><a href="#cb14-20" tabindex="-1"></a><span class="ex">parallel</span> <span class="at">--dry-run</span> <span class="at">--rpl</span> <span class="st">&quot;{sample} s:.+/(.+)_1.fastq.gz:\1:&quot;</span> <span class="at">--rpl</span> <span class="st">&quot;{read2} s:_1:_2:&quot;</span> <span class="st">&quot;salmon quant -i </span><span class="va">$WORKDIR</span><span class="st">/SRO_TransPi_assembly/Gene_expression/unfixrm_SRO_control.Trinity.index -l A -1 {} -2 {read2} -o {sample}_salmon_eq --numBootstraps 500 --useVBOpt --seqBias --dumpEq -p </span><span class="dt">\$</span><span class="st">SLURM_CPUS_PER_TASK --validateMappings&quot;</span> ::: <span class="va">$(</span><span class="fu">ls</span> <span class="at">-1</span> <span class="va">$WORKDIR</span>/QX_RNA-Seq/data/NN01-5<span class="pp">*</span>_1.fastq.gz <span class="va">)</span> <span class="op">&gt;</span> <span class="va">$JOBNAME</span>.cmds</span>
+<span id="cb14-21"><a href="#cb14-21" tabindex="-1"></a></span>
+<span id="cb14-22"><a href="#cb14-22" tabindex="-1"></a><span class="co"># submit the job array to the cluster</span></span>
+<span id="cb14-23"><a href="#cb14-23" tabindex="-1"></a><span class="ex">sbatch</span> <span class="at">-a</span> 1-<span class="va">$(</span><span class="fu">cat</span> <span class="va">$JOBNAME</span>.cmds <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span><span class="va">)</span>%10 <span class="at">--job-name</span><span class="op">=</span><span class="va">$JOBNAME</span> <span class="at">--cpus-per-task</span><span class="op">=</span><span class="va">$NCORES</span> <span class="at">--mem</span><span class="op">=</span><span class="va">${MEM}</span>G <span class="at">--time</span><span class="op">=</span><span class="va">$WALLTIME</span> <span class="at">--export</span><span class="op">=</span>ALL,CMDS_FILE=<span class="va">$JOBNAME</span>.cmds,CONDA_NAME=<span class="va">$CONDA_NAME</span> <span class="va">${WORKDIR}</span>/array.slurm</span></code></pre></div>
+<p>Expression-based clustering of transcripts was performed with <a href="https://github.com/COMBINE-lab/RapClust">RapClust</a> <span class="citation">(Srivastava <em>et al.</em> 2016)</span>.</p>
 <div class="sourceCode" id="cb15"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" tabindex="-1"></a><span class="va">CONDA_NAME</span><span class="op">=</span>genomics</span>
-<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="ex">mamba</span> install <span class="at">-n</span> <span class="va">$CONDA_NAME</span> kallisto salmon </span>
-<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="va">WORKDIR</span><span class="op">=</span>/home/ibar/adna/Oyster_QX_Disease</span>
-<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/Gene_expression</span>
-<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="bu">cd</span> !$</span>
-<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a></span>
-<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a><span class="va">JOBNAME</span><span class="op">=</span><span class="st">&quot;Salmon_index&quot;</span></span>
-<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a><span class="va">NCORES</span><span class="op">=</span>12</span>
-<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a><span class="va">MEM</span><span class="op">=</span>64</span>
-<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a><span class="va">WALLTIME</span><span class="op">=</span>10:00:00</span>
-<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a><span class="ex">parallel</span> <span class="at">--dry-run</span> <span class="st">&quot;salmon index -t {} -i {/.}.index&quot;</span> ::: <span class="va">$(</span><span class="fu">ls</span> <span class="at">-1</span> <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/results/assemblies/<span class="pp">*</span>Trinity.fa <span class="va">)</span> <span class="op">&gt;</span> <span class="va">$JOBNAME</span>.cmds </span>
-<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a></span>
-<span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a><span class="co"># submit the job array to the cluster</span></span>
-<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a><span class="ex">sbatch</span> <span class="at">-a</span> 1-<span class="va">$(</span><span class="fu">cat</span> <span class="va">$JOBNAME</span>.cmds <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span><span class="va">)</span>%10 <span class="at">--job-name</span><span class="op">=</span><span class="va">$JOBNAME</span> <span class="at">--cpus-per-task</span><span class="op">=</span><span class="va">$NCORES</span> <span class="at">--mem</span><span class="op">=</span><span class="va">${MEM}</span>G <span class="at">--time</span><span class="op">=</span><span class="va">$WALLTIME</span> <span class="at">--export</span><span class="op">=</span>ALL,CMDS_FILE=<span class="va">$JOBNAME</span>.cmds,CONDA_NAME=<span class="va">$CONDA_NAME</span> <span class="va">${WORKDIR}</span>/array.slurm</span>
-<span id="cb15-15"><a href="#cb15-15" tabindex="-1"></a></span>
-<span id="cb15-16"><a href="#cb15-16" tabindex="-1"></a><span class="va">DATE</span><span class="op">=</span><span class="kw">`</span><span class="fu">date</span> +%d_%m_%Y<span class="kw">`</span></span>
-<span id="cb15-17"><a href="#cb15-17" tabindex="-1"></a><span class="va">JOBNAME</span><span class="op">=</span><span class="st">&quot;Salmon_quant_</span><span class="va">$DATE</span><span class="st">&quot;</span></span>
-<span id="cb15-18"><a href="#cb15-18" tabindex="-1"></a><span class="va">RUNDIR</span><span class="op">=</span><span class="va">$WORKDIR</span>/SRO_TransPi_assembly/Gene_expression/<span class="va">$JOBNAME</span></span>
-<span id="cb15-19"><a href="#cb15-19" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">$RUNDIR</span> <span class="kw">&amp;&amp;</span> <span class="bu">cd</span> <span class="va">$RUNDIR</span></span>
-<span id="cb15-20"><a href="#cb15-20" tabindex="-1"></a><span class="ex">parallel</span> <span class="at">--dry-run</span> <span class="at">--rpl</span> <span class="st">&quot;{sample} s:.+/(.+)_1.fastq.gz:\1:&quot;</span> <span class="at">--rpl</span> <span class="st">&quot;{read2} s:_1:_2:&quot;</span> <span class="st">&quot;salmon quant -i </span><span class="va">$WORKDIR</span><span class="st">/SRO_TransPi_assembly/Gene_expression/unfixrm_SRO_control.Trinity.index -l A -1 {} -2 {read2} -o {sample}_salmon_eq --numBootstraps 500 --useVBOpt --seqBias --dumpEq -p </span><span class="dt">\$</span><span class="st">SLURM_CPUS_PER_TASK --validateMappings&quot;</span> ::: <span class="va">$(</span><span class="fu">ls</span> <span class="at">-1</span> <span class="va">$WORKDIR</span>/QX_RNA-Seq/data/NN01-5<span class="pp">*</span>_1.fastq.gz <span class="va">)</span> <span class="op">&gt;</span> <span class="va">$JOBNAME</span>.cmds</span>
-<span id="cb15-21"><a href="#cb15-21" tabindex="-1"></a></span>
-<span id="cb15-22"><a href="#cb15-22" tabindex="-1"></a><span class="co"># submit the job array to the cluster</span></span>
-<span id="cb15-23"><a href="#cb15-23" tabindex="-1"></a><span class="ex">sbatch</span> <span class="at">-a</span> 1-<span class="va">$(</span><span class="fu">cat</span> <span class="va">$JOBNAME</span>.cmds <span class="kw">|</span> <span class="fu">wc</span> <span class="at">-l</span><span class="va">)</span>%10 <span class="at">--job-name</span><span class="op">=</span><span class="va">$JOBNAME</span> <span class="at">--cpus-per-task</span><span class="op">=</span><span class="va">$NCORES</span> <span class="at">--mem</span><span class="op">=</span><span class="va">${MEM}</span>G <span class="at">--time</span><span class="op">=</span><span class="va">$WALLTIME</span> <span class="at">--export</span><span class="op">=</span>ALL,CMDS_FILE=<span class="va">$JOBNAME</span>.cmds,CONDA_NAME=<span class="va">$CONDA_NAME</span> <span class="va">${WORKDIR}</span>/array.slurm</span></code></pre></div>
-<p>Expression-based clustering of transcripts was performed with <a href="https://github.com/COMBINE-lab/RapClust">RapClust</a> <span class="citation">(Trapnell <em>et al.</em> 2013)</span>.</p>
-<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" tabindex="-1"></a><span class="va">CONDA_NAME</span><span class="op">=</span>genomics</span>
-<span id="cb16-2"><a href="#cb16-2" tabindex="-1"></a><span class="ex">conda</span> activate <span class="va">$CONDA_NAME</span></span>
-<span id="cb16-3"><a href="#cb16-3" tabindex="-1"></a><span class="ex">mamba</span> install mcl <span class="co"># need to install mcl</span></span>
-<span id="cb16-4"><a href="#cb16-4" tabindex="-1"></a><span class="ex">pip</span> install git+https://github.com/IdoBar/RapClust@patch-1</span>
-<span id="cb16-5"><a href="#cb16-5" tabindex="-1"></a><span class="co"># mamba install -n $CONDA_NAME kallisto salmon rapclust</span></span>
-<span id="cb16-6"><a href="#cb16-6" tabindex="-1"></a><span class="va">WORKDIR</span><span class="op">=</span>/home/ibar/adna/Oyster_QX_Disease</span>
-<span id="cb16-7"><a href="#cb16-7" tabindex="-1"></a><span class="bu">cd</span> <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/Gene_expression/Salmon_quant_14_06_2024</span>
-<span id="cb16-8"><a href="#cb16-8" tabindex="-1"></a></span>
-<span id="cb16-9"><a href="#cb16-9" tabindex="-1"></a><span class="co"># unzip the eq_classes files</span></span>
-<span id="cb16-10"><a href="#cb16-10" tabindex="-1"></a><span class="fu">find</span> . <span class="at">-name</span> eq_classes.txt.gz <span class="kw">|</span> <span class="ex">parallel</span>  <span class="st">&quot;gzip -cd {} &gt; {.}&quot;</span></span>
-<span id="cb16-11"><a href="#cb16-11" tabindex="-1"></a></span>
-<span id="cb16-12"><a href="#cb16-12" tabindex="-1"></a><span class="va">JOBNAME</span><span class="op">=</span><span class="st">&quot;SRO_rapclust&quot;</span></span>
-<span id="cb16-13"><a href="#cb16-13" tabindex="-1"></a><span class="va">NCORES</span><span class="op">=</span>12</span>
-<span id="cb16-14"><a href="#cb16-14" tabindex="-1"></a><span class="va">MEM</span><span class="op">=</span>64</span>
-<span id="cb16-15"><a href="#cb16-15" tabindex="-1"></a><span class="va">WALLTIME</span><span class="op">=</span>10:00:00</span>
-<span id="cb16-16"><a href="#cb16-16" tabindex="-1"></a><span class="co"># prepare config file for RapClust</span></span>
-<span id="cb16-17"><a href="#cb16-17" tabindex="-1"></a><span class="fu">find</span> . <span class="at">-maxdepth</span> 1 <span class="at">-type</span> d <span class="at">-name</span>  <span class="st">&quot;NN01-*salmon_eq&quot;</span> <span class="kw">|</span> <span class="fu">sort</span> <span class="kw">|</span> <span class="fu">gawk</span> <span class="at">-F</span> <span class="st">&quot;/&quot;</span> <span class="st">&#39;BEGIN{printf &quot;conditions:\n  - SRO_Control\n  - SRO_QX\nsamples:\n  SRO_Control:&quot;}{printf &quot;\n    - %s&quot;, $2}NR==3{printf &quot;\n  SRO_QX:&quot;}END{printf &quot;\noutdir: SRO_rapclust\n&quot;}&#39;</span> <span class="op">&gt;</span> <span class="va">$JOBNAME</span>.yaml</span>
-<span id="cb16-18"><a href="#cb16-18" tabindex="-1"></a><span class="co"># prepare SLURM script </span></span>
-<span id="cb16-19"><a href="#cb16-19" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;RapClust --config </span><span class="va">$JOBNAME</span><span class="st">.yaml&quot;</span> <span class="op">&gt;</span> <span class="va">$JOBNAME</span>.cmds</span>
-<span id="cb16-20"><a href="#cb16-20" tabindex="-1"></a><span class="co"># submit the job array to the cluster</span></span>
-<span id="cb16-21"><a href="#cb16-21" tabindex="-1"></a><span class="ex">sbatch</span> <span class="at">-a</span> 1 <span class="at">--job-name</span><span class="op">=</span><span class="va">$JOBNAME</span> <span class="at">--cpus-per-task</span><span class="op">=</span><span class="va">$NCORES</span> <span class="at">--mem</span><span class="op">=</span><span class="va">${MEM}</span>G <span class="at">--time</span><span class="op">=</span><span class="va">$WALLTIME</span> <span class="at">--export</span><span class="op">=</span>ALL,CMDS_FILE=<span class="va">$JOBNAME</span>.cmds,CONDA_NAME=<span class="va">$CONDA_NAME</span> <span class="va">${WORKDIR}</span>/array.slurm</span></code></pre></div>
+<span id="cb15-2"><a href="#cb15-2" tabindex="-1"></a><span class="ex">conda</span> activate <span class="va">$CONDA_NAME</span></span>
+<span id="cb15-3"><a href="#cb15-3" tabindex="-1"></a><span class="ex">mamba</span> install mcl <span class="co"># need to install mcl</span></span>
+<span id="cb15-4"><a href="#cb15-4" tabindex="-1"></a><span class="ex">pip</span> install git+https://github.com/IdoBar/RapClust@patch-1</span>
+<span id="cb15-5"><a href="#cb15-5" tabindex="-1"></a><span class="co"># mamba install -n $CONDA_NAME kallisto salmon rapclust</span></span>
+<span id="cb15-6"><a href="#cb15-6" tabindex="-1"></a><span class="va">WORKDIR</span><span class="op">=</span>/home/ibar/adna/Oyster_QX_Disease</span>
+<span id="cb15-7"><a href="#cb15-7" tabindex="-1"></a><span class="bu">cd</span> <span class="va">$WORKDIR</span>/SRO_TransPi_assembly/Gene_expression/Salmon_quant_14_06_2024</span>
+<span id="cb15-8"><a href="#cb15-8" tabindex="-1"></a></span>
+<span id="cb15-9"><a href="#cb15-9" tabindex="-1"></a><span class="co"># unzip the eq_classes files</span></span>
+<span id="cb15-10"><a href="#cb15-10" tabindex="-1"></a><span class="fu">find</span> . <span class="at">-name</span> eq_classes.txt.gz <span class="kw">|</span> <span class="ex">parallel</span>  <span class="st">&quot;gzip -cd {} &gt; {.}&quot;</span></span>
+<span id="cb15-11"><a href="#cb15-11" tabindex="-1"></a></span>
+<span id="cb15-12"><a href="#cb15-12" tabindex="-1"></a><span class="va">JOBNAME</span><span class="op">=</span><span class="st">&quot;SRO_rapclust&quot;</span></span>
+<span id="cb15-13"><a href="#cb15-13" tabindex="-1"></a><span class="va">NCORES</span><span class="op">=</span>12</span>
+<span id="cb15-14"><a href="#cb15-14" tabindex="-1"></a><span class="va">MEM</span><span class="op">=</span>64</span>
+<span id="cb15-15"><a href="#cb15-15" tabindex="-1"></a><span class="va">WALLTIME</span><span class="op">=</span>10:00:00</span>
+<span id="cb15-16"><a href="#cb15-16" tabindex="-1"></a><span class="co"># prepare config file for RapClust</span></span>
+<span id="cb15-17"><a href="#cb15-17" tabindex="-1"></a><span class="fu">find</span> . <span class="at">-maxdepth</span> 1 <span class="at">-type</span> d <span class="at">-name</span>  <span class="st">&quot;NN01-*salmon_eq&quot;</span> <span class="kw">|</span> <span class="fu">sort</span> <span class="kw">|</span> <span class="fu">gawk</span> <span class="at">-F</span> <span class="st">&quot;/&quot;</span> <span class="st">&#39;BEGIN{printf &quot;conditions:\n  - SRO_Control\n  - SRO_QX\nsamples:\n  SRO_Control:&quot;}{printf &quot;\n    - %s&quot;, $2}NR==3{printf &quot;\n  SRO_QX:&quot;}END{printf &quot;\noutdir: SRO_rapclust\n&quot;}&#39;</span> <span class="op">&gt;</span> <span class="va">$JOBNAME</span>.yaml</span>
+<span id="cb15-18"><a href="#cb15-18" tabindex="-1"></a><span class="co"># prepare SLURM script </span></span>
+<span id="cb15-19"><a href="#cb15-19" tabindex="-1"></a><span class="bu">echo</span> <span class="st">&quot;RapClust --config </span><span class="va">$JOBNAME</span><span class="st">.yaml&quot;</span> <span class="op">&gt;</span> <span class="va">$JOBNAME</span>.cmds</span>
+<span id="cb15-20"><a href="#cb15-20" tabindex="-1"></a><span class="co"># submit the job array to the cluster</span></span>
+<span id="cb15-21"><a href="#cb15-21" tabindex="-1"></a><span class="ex">sbatch</span> <span class="at">-a</span> 1 <span class="at">--job-name</span><span class="op">=</span><span class="va">$JOBNAME</span> <span class="at">--cpus-per-task</span><span class="op">=</span><span class="va">$NCORES</span> <span class="at">--mem</span><span class="op">=</span><span class="va">${MEM}</span>G <span class="at">--time</span><span class="op">=</span><span class="va">$WALLTIME</span> <span class="at">--export</span><span class="op">=</span>ALL,CMDS_FILE=<span class="va">$JOBNAME</span>.cmds,CONDA_NAME=<span class="va">$CONDA_NAME</span> <span class="va">${WORKDIR}</span>/array.slurm</span></code></pre></div>
 </div>
 </div>
 </div>
 <div id="general-information" class="section level2">
 <h2>General information</h2>
-<p>This document was last updated at 2024-12-19 10:59:27 using R Markdown (built with R version 4.2.1 (2022-06-23 ucrt)). Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. It is especially powerful at authoring documents and reports which include code and can execute code and use the results in the output. For more details on using R Markdown see <a href="http://rmarkdown.rstudio.com" class="uri">http://rmarkdown.rstudio.com</a> and <a href="https://www.rstudio.com/wp-content/uploads/2016/03/rmarkdown-cheatsheet-2.0.pdf">Rmarkdown cheatsheet</a>.</p>
+<p>This document was last updated at 2025-01-15 00:10:00 using R Markdown (built with R version 4.2.1 (2022-06-23 ucrt)). The source code for this webpage can be found at <a href="https://github.com/IdoBar/QX_bioinfo_analysis" class="uri">https://github.com/IdoBar/QX_bioinfo_analysis</a>.</p>
+<p>Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. It is especially powerful at authoring documents and reports which include code and can execute code and use the results in the output. For more details on using R Markdown see <a href="http://rmarkdown.rstudio.com" class="uri">http://rmarkdown.rstudio.com</a> and <a href="https://www.rstudio.com/wp-content/uploads/2016/03/rmarkdown-cheatsheet-2.0.pdf">Rmarkdown cheatsheet</a>.</p>
 <hr />
 </div>
 <div id="bibliography" class="section level2 unnumbered">
@@ -3678,8 +3668,14 @@ Buchfink B, Xie C, Huson DH (2015) Fast and sensitive protein alignment using <s
 <div id="ref-bushmanovaRnaQUASTQualityAssessment2016" class="csl-entry">
 Bushmanova E, Antipov D, Lapidus A, et al. (2016) <span class="nocase">rnaQUAST</span>: A quality assessment tool for de novo transcriptome assemblies. Bioinformatics 32:2210–2212. doi: <a href="https://doi.org/10.1093/bioinformatics/btw218">10.1093/bioinformatics/btw218</a>
 </div>
+<div id="ref-camachoBLASTArchitectureApplications2009" class="csl-entry">
+Camacho C, Coulouris G, Avagyan V, et al. (2009) <span>BLAST</span>+: Architecture and applications. BMC Bioinformatics 10:421. doi: <a href="https://doi.org/10.1186/1471-2105-10-421">10.1186/1471-2105-10-421</a>
+</div>
 <div id="ref-chenFastpUltrafastAllone2018" class="csl-entry">
 Chen S, Zhou Y, Chen Y, Gu J (2018) Fastp: An ultra-fast all-in-one <span>FASTQ</span> preprocessor. Bioinformatics 34:i884–i890. doi: <a href="https://doi.org/10.1093/bioinformatics/bty560">10.1093/bioinformatics/bty560</a>
+</div>
+<div id="ref-emanuelssonLocatingProteinsCell2007" class="csl-entry">
+Emanuelsson O, Brunak S, von Heijne G, Nielsen H (2007) Locating proteins in the cell using <span>TargetP</span>, <span>SignalP</span> and related tools. Nat Protocols 2:953–971. doi: <a href="https://doi.org/10.1038/nprot.2007.131">10.1038/nprot.2007.131</a>
 </div>
 <div id="ref-haznedarogluOptimizationNovoTranscriptome2012" class="csl-entry">
 Haznedaroglu BZ, Reeves D, Rismani-Yazdi H, Peccia J (2012) Optimization of de novo transcriptome assembly from high-throughput short read sequencing data improves functional annotation for non-model organisms. BMC Bioinformatics 13:170. doi: <a href="https://doi.org/10.1186/1471-2105-13-170">10.1186/1471-2105-13-170</a>
@@ -3687,20 +3683,29 @@ Haznedaroglu BZ, Reeves D, Rismani-Yazdi H, Peccia J (2012) Optimization of de n
 <div id="ref-holzerNovoTranscriptomeAssembly2019" class="csl-entry">
 Hölzer M, Marz M (2019) De novo transcriptome assembly: <span>A</span> comprehensive cross-species comparison of short-read <span>RNA-Seq</span> assemblers. Gigascience 8:giz039. doi: <a href="https://doi.org/10.1093/gigascience/giz039">10.1093/gigascience/giz039</a>
 </div>
+<div id="ref-jonesInterProScanGenomescaleProtein2014" class="csl-entry">
+Jones P, Binns D, Chang H-Y, et al. (2014) <span>InterProScan</span> 5: Genome-scale protein function classification. Bioinformatics 30:1236–1240. doi: <a href="https://doi.org/10.1093/bioinformatics/btu031">10.1093/bioinformatics/btu031</a>
+</div>
+<div id="ref-kroghPredictingTransmembraneProtein2001" class="csl-entry">
+Krogh A, Larsson B, Heijne G von, Sonnhammer ELL (2001) Predicting transmembrane protein topology with a hidden markov model: Application to complete genomes. Journal of Molecular Biology 305:567–580. doi: <a href="https://doi.org/10.1006/jmbi.2000.4315">10.1006/jmbi.2000.4315</a>
+</div>
 <div id="ref-liEvaluationNovoTranscriptome2014b" class="csl-entry">
 Li B, Fillmore N, Bai Y, et al. (2014) Evaluation of de novo transcriptome assemblies from <span>RNA-Seq</span> data. Genome Biol 15:553. doi: <a href="https://doi.org/10.1186/s13059-014-0553-5">10.1186/s13059-014-0553-5</a>
 </div>
 <div id="ref-loveSwimmingDownstreamStatistical2018" class="csl-entry">
 Love MI, Soneson C, Patro R (2018) Swimming downstream: Statistical analysis of differential transcript usage following <span>Salmon</span> quantification. F1000Research 7:952. doi: <a href="https://doi.org/10.12688/f1000research.15398.1">10.12688/f1000research.15398.1</a>
 </div>
-<div id="ref-macmanesOysterRiverProtocol2018a" class="csl-entry">
-MacManes MD (2018) The <span>Oyster River Protocol</span>: A multi-assembler and kmer approach for de novo transcriptome assembly. PeerJ 6:e5428. doi: <a href="https://doi.org/10.7717/peerj.5428">10.7717/peerj.5428</a>
+<div id="ref-mitchellInterPro2019Improving2019" class="csl-entry">
+Mitchell AL, Attwood TK, Babbitt PC, et al. (2019) <span>InterPro</span> in 2019: Improving coverage, classification and access to protein sequence annotations. Nucleic Acids Research 47:D351–D360. doi: <a href="https://doi.org/10.1093/nar/gky1100">10.1093/nar/gky1100</a>
 </div>
 <div id="ref-patroSalmonProvidesFast2017" class="csl-entry">
 Patro R, Duggal G, Love MI, et al. (2017) Salmon provides fast and bias-aware quantification of transcript expression. Nat Methods 14:417–419. doi: <a href="https://doi.org/10.1038/nmeth.4197">10.1038/nmeth.4197</a>
 </div>
 <div id="ref-penalozaChromosomelevelGenomeAssembly2021" class="csl-entry">
 Peñaloza C, Gutierrez AP, Eöry L, et al. (2021) A chromosome-level genome assembly for the <span>Pacific</span> oyster <span><em>Crassostrea gigas</em></span>. GigaScience 10:giab020. doi: <a href="https://doi.org/10.1093/gigascience/giab020">10.1093/gigascience/giab020</a>
+</div>
+<div id="ref-petersenSignalPDiscriminatingSignal2011" class="csl-entry">
+Petersen TN, Brunak S, Heijne G von, Nielsen H (2011) SignalP 4.0: Discriminating signal peptides from transmembrane regions. Nat Meth 8:785–786. doi: <a href="https://doi.org/10.1038/nmeth.1701">10.1038/nmeth.1701</a>
 </div>
 <div id="ref-quastSILVARibosomalRNA2012" class="csl-entry">
 Quast C, Pruesse E, Yilmaz P, et al. (2012) The <span>SILVA</span> ribosomal <span>RNA</span> gene database project: Improved data processing and web-based tools. Nucleic Acids Res 41:D590–D596. doi: <a href="https://doi.org/10.1093/nar/gks1219">10.1093/nar/gks1219</a>
@@ -3714,8 +3719,8 @@ Smith-Unna R, Boursnell C, Patro R, et al. (2016) <span>TransRate</span>: Refere
 <div id="ref-songRcorrectorEfficientAccurate2015a" class="csl-entry">
 Song L, Florea L (2015) Rcorrector: Efficient and accurate error correction for <span class="nocase">Illumina RNA-seq</span> reads. GigaScience 4:48. doi: <a href="https://doi.org/10.1186/s13742-015-0089-y">10.1186/s13742-015-0089-y</a>
 </div>
-<div id="ref-trapnellDifferentialAnalysisGene2013" class="csl-entry">
-Trapnell C, Hendrickson DG, Sauvageau M, et al. (2013) Differential analysis of gene regulation at transcript resolution with <span class="nocase">RNA-seq</span>. Nat Biotechnol 31:46–53. doi: <a href="https://doi.org/10.1038/nbt.2450">10.1038/nbt.2450</a>
+<div id="ref-srivastavaAccurateFastLightweight2016a" class="csl-entry">
+Srivastava A, Sarkar H, Malik L, Patro R (2016) Accurate, <span>Fast</span> and <span>Lightweight Clustering</span> of de novo <span>Transcriptomes</span> using <span>Fragment Equivalence Classes</span>. <a href="http://arxiv.org/abs/1604.03250">http://arxiv.org/abs/1604.03250. </a>Cited 6 Jan 2025
 </div>
 </div>
 </div>
@@ -3775,7 +3780,7 @@ $(document).ready(function ()  {
 
     // establish options
     var options = {
-      selectors: "h1,h2,h3",
+      selectors: "h1,h2,h3,h4",
       theme: "bootstrap3",
       context: '.toc-content',
       hashGenerator: function (text) {

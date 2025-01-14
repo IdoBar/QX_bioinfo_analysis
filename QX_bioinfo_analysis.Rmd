@@ -5,13 +5,15 @@ date: "`r format(Sys.Date(), '%d %B %Y')`"
 always_allow_html: yes
 output: 
     bookdown::html_document2:
+      includes:
+       in_header: style/header.html
       df_print: paged
       theme: united
       highlight: pygments
       css: "style/style.css"
       toc: true
       toc_float: true
-      toc_depth: 3
+      toc_depth: 4
   #    highlight: pygments
       number_sections: false
       code_folding: hide
@@ -30,7 +32,7 @@ pak::pak(fav_packages)
 pacman::p_load(char = basename(fav_packages))
 ```
 
-# Experimental Design
+# Research Design
 
 ## Aims
 
@@ -44,9 +46,8 @@ pacman::p_load(char = basename(fav_packages))
 
 # Transcriptome assembly of _M. sydneyi_ and _Saccostrea glomerata_
 
-## Analysis Pipeline
 
-### General overview:
+## General overview of analysis pipeline:
 
 1.  Data pre-processing:
     a.  Quality check
@@ -63,9 +64,10 @@ pacman::p_load(char = basename(fav_packages))
 8.  Summary statistics and visualisation
 
 ### Methods
-#### RNA extraction
+#### RNA extraction and sequencing
 RNA was extracted from the digestive gland of 3 healthy Sydney Rock Oysters (SRO, _Saccostrea glomerata_) and 3 SRO infected with QX disease (as confirmed by PCR assay on DNA extracted from each tissue) using the Trizol method. The RNA was sent for sequencing on an Illumina NovaSeq 6000, generating 150 bp paired-end reads (Macrogen, Korea). 
 
+#### Processing RNA-Seq reads
 The reads were downloaded to the Griffith University High Performance Computing cluster 'Gowonda' and the University of Queensland High Performance Computing cluster 'Bunya' (access provided by The Queensland Cyber Infrastructure Foundation (QCIF)) for bioinformatics processing and analyses, following the guidelines by Harvard Informatics (see [link](https://github.com/harvardinformatics/TranscriptomeAssemblyTools)) . 
 These included error-correction with Rcorrector v1.5.0 [@songRcorrectorEfficientAccurate2015a] of the reads from each set (healthy SRO and QX-infected SRO) and removal of "unfixable" reads.
 
@@ -288,7 +290,7 @@ aria2c -x5 https://github.com/nextflow-io/nextflow/releases/download/v22.11.1-ed
 chmod +x nextflow-22.11.1-edge-all # this is the only version that supports DSL1, Apptainer and has an update Tower plugin!
 ```
 
-##### Test TransPi on subset of reads from one sample
+Test TransPi on subset of reads from one sample
 
 ```{bash transpi-test}
 # install bbtools
@@ -319,7 +321,7 @@ nextflow-22.11.1-edge-all run /home/ibar/adna/tools/TransPi/TransPi.nf -with-tow
 
 ```
  
-##### Run TransPi on the combined and corrected reads from each experimental group 
+Run TransPi on the combined and corrected reads from each experimental group 
 
 ```{bash transpi-assemble}
 # WORKDIR=/scratch/s2978925/aDNA/niki_qx #Gowonda
@@ -342,7 +344,7 @@ nextflow-22.11.1-edge-all run /home/ibar/adna/tools/TransPi/TransPi.nf -with-tow
 
 ```
 
-##### Run EvidentialGene step of TransPi to collapse redundant transcripts
+Run EvidentialGene step of TransPi to collapse redundant transcripts
 
 ```{bash transpi-evigene}
 JOBNAME="onlyEvigene"
@@ -365,7 +367,7 @@ sbatch -a 1-$(cat $JOBNAME.resume.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-pe
 
 ```
 
-##### Annotate chosen assemblies
+#### Annotate chosen assemblies
 
 The assemblies were annotated with TransPi, using homology searches (BLAST @camachoBLASTArchitectureApplications2009, and DIAMOND @buchfinkFastSensitiveProtein2015a) against the Uniprot_Sprot protein database, as well as using HMM search against the Pfam database of protein families. In addition, signal peptides, ribosomal genes and transmembrane topology were predicted with SignalP v4.1 [@petersenSignalPDiscriminatingSignal2011], Rnammer and TMHMM [@kroghPredictingTransmembraneProtein2001], respectively [@emanuelssonLocatingProteinsCell2007].
 
@@ -392,7 +394,7 @@ sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=
 rclone copy -P --dry-run --include "*Trinity*" $WORKDIR/SRO_TransPi_assembly/results/assemblies GURS_shared:Oyster_QX_Disease/QX_RNA-Seq/SRO_TransPi_assembly/results/assemblies
 ```
 
-###### Annotate chosen assemblies with BLAST
+#### Additional annotation of chosen assemblies
 
 In addition to the annotation performed with TransPi, the transcriptomes were annotated against the non-redundant nucleotide and protein databases of the NCBI (`nt` and `nr`, respectively) to achieve more accurate species-specific annotations.
 
@@ -478,8 +480,6 @@ sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=
 
 ```
 
-###### Annotate predicted proteins with DIAMOND
-
 Even when using a split-combine strategy using `blast-nf`, BLASTp is just too slow (it takes around 50 hours to process a chunk of 500 proteins). Therefore we also used DIAMOND, which can be x1,000 quicker than BLAST [@buchfinkFastSensitiveProtein2015a].
 
 
@@ -560,9 +560,9 @@ sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=
 
 ```
 
-###### Functional annotation of predicted proteins with InterPro
+#### Functional annotation of predicted proteins
 
-The predicted proteins in the transcriptomes were further annotated using InterProScan v5.66-98.0 (or [FA-nf](https://github.com/guigolab/FA-nf)) to assign protein families, motifs and ontologies to assist with transcript-to-gene annotation.
+The predicted proteins in the transcriptomes were further annotated using InterProScan v5.66-98.0 [@jonesInterProScanGenomescaleProtein2014; @mitchellInterPro2019Improving2019] to assign protein families, motifs and ontologies to assist with transcript-to-gene annotation. (An alternative method is with [FA-nf](https://github.com/guigolab/FA-nf))
 Notice the issues mentioned above with SignalP and TMHMM and a new one for Phobius (see discussions and solutions on [GitHub](https://github.com/nextgenusfs/funannotate/issues/696#issuecomment-1057663190) and [BioStar](https://www.biostars.org/p/238642/))
 
 ```{bash prot-annotation}
@@ -631,7 +631,7 @@ rclone copy -P $WORKDIR/SRO_TransPi_assembly/Annotation/Annotation_results/ipsca
 
 These annotation tables were added to the Trinotate database of the assemblies.
 
-##### Assess the quality of assemblies
+#### Quality assessments of assemblies
 
 The transcriptome assemblies were assessed and compared using [rnaQuast](https://github.com/ablab/rnaquast) v2.2.3 [@bushmanovaRnaQUASTQualityAssessment2016], [TransRate](http://hibberdlab.com/transrate) v1.0.3 [@smith-unnaTransRateReferencefreeQuality2016] and [DETONATE](https://deweylab.biostat.wisc.edu/detonate/) v1.11 [@liEvaluationNovoTranscriptome2014b], as suggested in the Trinity [documentation](https://github.com/trinityrnaseq/trinityrnaseq/wiki/Transcriptome-Assembly-Quality-Assessment) and by @beheraPlantTranscriptomeAssembly2021.
 
@@ -724,7 +724,7 @@ sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=
 
 #### Gene Expression Analysis
 
-The chosen most representative transcriptome assembly for SRO (Rcorrected SRO non-infected assembly) was used as reference to quantify gene/transcript abundance using [Salmon](https://salmon.readthedocs.io/en/latest/salmon.html) [@patroSalmonProvidesFast2017; @loveSwimmingDownstreamStatistical2018].
+The chosen most representative transcriptome assembly for SRO (Rcorrected SRO non-infected TransPi assembly) was used as reference to quantify gene/transcript abundance using [Salmon](https://salmon.readthedocs.io/en/latest/salmon.html) [@patroSalmonProvidesFast2017; @loveSwimmingDownstreamStatistical2018].
 
 ```{bash salmon-quant}
 CONDA_NAME=genomics
@@ -784,7 +784,9 @@ sbatch -a 1 --job-name=$JOBNAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WA
 
 ## General information
 
-This document was last updated at `r Sys.time()` using R Markdown (built with `r R.version.string`). Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. It is especially powerful at authoring documents and reports which include code and can execute code and use the results in the output. For more details on using R Markdown see <http://rmarkdown.rstudio.com> and [Rmarkdown cheatsheet](https://www.rstudio.com/wp-content/uploads/2016/03/rmarkdown-cheatsheet-2.0.pdf).
+This document was last updated at `r Sys.time()` using R Markdown (built with `r R.version.string`). The source code for this webpage can be found at <https://github.com/IdoBar/QX_bioinfo_analysis>.  
+
+Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. It is especially powerful at authoring documents and reports which include code and can execute code and use the results in the output. For more details on using R Markdown see <http://rmarkdown.rstudio.com> and [Rmarkdown cheatsheet](https://www.rstudio.com/wp-content/uploads/2016/03/rmarkdown-cheatsheet-2.0.pdf).
 
 ------------------------------------------------------------------------
 
