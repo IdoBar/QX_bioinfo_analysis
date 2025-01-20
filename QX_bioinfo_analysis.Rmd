@@ -988,84 +988,6 @@ In addition, it would be great to have a reference genome of a closely related s
 
 ```
 
-#### Comparison to Ascetosporean genomes
-
-The assembled contigs were aligned to the newly published genomes of several Ascetosporea protists (including _Marteilia pararefringens_, see [NCBI Bioproject PRJNA1051017](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1051017); @hiltunenthorenComparativeGenomicsAscetosporea2024) using [nf-core/pairgenomealign](https://nf-co.re/pairgenomealign/1.1.0/) v1.1.0 and `mummer` [@marcaisMUMmer4FastVersatile2018].  
-
-```{bash pairgenomealign}
-# download Flye assembly from research space.
-mkdir -p $HOME/adna/Oyster_QX_Disease/Nanopore_sequencing/SRO_781
-rclone copy -P GURS_shared:Oyster_QX_Disease/Nanopore_sequencing/SRO_781/Galaxy_analysis Galaxy_analysis
-
-# WORK_DIR=$HOME/scratch/McDougall/Niki_QX_genome/Nanopore_sequencing # on Gowonda
-WORK_DIR=$HOME/adna/Oyster_QX_Disease/Comparative_Genomics # on Bunya
-mkdir -p $WORK_DIR && cd $WORK_DIR
-
-# download Ascetosporea genomes from NCBI
-conda activate genomics
-datasets download genome accession PRJNA1051017 --filename Ascetosporea.zip
-# download metadata
-# datasets summary genome accession PRJNA1051017  | jq -r '.genes.genes[].gene | [.gene_id, .common_name, .taxname, .tax_id, .transcripts[0].accession_version, .chromosomes[0]] | @csv' > primates_mc1r.csv
-# prepare sample sheet
-echo "sample,fasta" > samplesheet.csv
-find $PWD/ncbi_dataset/data -name "*genomic.fna" | parallel --rpl "{query} s:.+/GCA_.+\.1_UU_(.+)_1_genomic.fna:\1:" echo "{query},{}" >> samplesheet.csv
-
-start_long_interactive_job
-TARGET="$HOME/adna/Oyster_QX_Disease/Nanopore_sequencing/SRO_781/Galaxy_analysis/Galaxy_Flye_assembly.fasta"
-~/bin/nextflow-24.04.4-all run nf-core/pairgenomealign  -c ~/.nextflow/bunya.config -profile bunya,apptainer  --target $TARGET  --input samplesheet.csv --outdir Ascetosporea_pairedgenomealign
-
-rclone copy -P Ascetosporea_pairedgenomealign GURS_shared:Oyster_QX_Disease/Comparative_Genomics/Ascetosporea_pairedgenomealign
-```
-
-
-
-```{bash mummer-genomealign}
-CONDA_NAME="genomics"
-mamba install -n $CONDA_NAME mummer4
-
-WORK_DIR=$HOME/adna/Oyster_QX_Disease/Comparative_Genomics # on Bunya
-mkdir -p $WORK_DIR && cd $WORK_DIR
-QUERY="$HOME/adna/Oyster_QX_Disease/Nanopore_sequencing/SRO_781/Galaxy_analysis/Galaxy_Flye_assembly.fasta"
-JOB_NAME="Ascetosporea_mummer"
-
-find $WORK_DIR/ncbi_dataset/data -name "*genomic.fna" | parallel --dry-run --rpl "{target} s:.+/GCA_.+\.1_UU_(.+)_1_genomic.fna:\1:" nucmer -t $SLURM_CPUS_PER_TASK -p Msyd_{target}_nucmer $QUERY {} > $JOB_NAME.cmds 
-
-
-```
-
-The contig **matches** between the 2 genomes (synteny plots), were plotted with [SYNY](https://github.com/PombertLab/SYNY) v1.2 [@julianSYNYPipelineInvestigate2024].
-
-```{bash syny}
-CONDA_NAME="syny"
-mamba create -n $CONDA_NAME syny perl-gd
-ln -s /home/ibar/miniconda3/envs/syny/lib/perl5/site_perl/5.22.0/x86_64-linux/GD $CONDA_PREFIX/lib/perl5/site_perl/
-conda activate syny
-NCORES=8
-MEM=16
-WALLTIME=1:00:00
-WORKDIR=$HOME/adna/Oyster_QX_Disease/Comparative_Genomics # on Bunya
-mkdir -p $WORKDIR && cd $WORKDIR
-QUERY="$HOME/adna/Oyster_QX_Disease/Nanopore_sequencing/SRO_781/Galaxy_analysis/Galaxy_Flye_assembly.fasta"
-fasta_to_gbff.pl -v -f $QUERY -g -o ./
-# run SYNY
-JOB_NAME="Ascetosporea_SYNY"
-find $WORKDIR/ncbi_dataset/data -name "*genomic.fna" | parallel --dry-run --rpl "{target} s:.+/GCA_.+\.1_UU_(.+)_1_genomic.fna:\1:" "fasta_to_gbff.pl -v -f {} -g -o Msyd_{target}_SYNY; ln -s $WORKDIR/Galaxy_Flye_assembly.gbff.gz Msyd_{target}_SYNY/; run_syny.pl -a Msyd_{target}_SYNY/*.gbff.gz -o Msyd_{target}_SYNY -t \$SLURM_CPUS_PER_TASK -e 1e-10" > $JOB_NAME.cmds
- 
-# submit the job array to the cluster
-sbatch -a 1-$(cat $JOB_NAME.cmds | wc -l) --job-name=$JOB_NAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOB_NAME.cmds,CONDA_NAME=$CONDA_NAME ${WORKDIR}/../array.slurm
-
-# focus on matching contigs only (after alignment of the genomes with Minimap2 within SYNY)
-start_interactive_job
-conda activate syny
-WORKDIR=$HOME/adna/Oyster_QX_Disease/Comparative_Genomics # on Bunya
-mkdir -p $WORKDIR && cd $WORKDIR
-cut -f1 Msyd_MPar_SYNY/ALIGNMENTS/PAF/GCA_039583845_vs_Galaxy_Flye_assembly.mmap.paf | uniq > Msyd_Mpar_shared_contigs.txt
-cut -f6 Msyd_MPar_SYNY/ALIGNMENTS/PAF/GCA_039583845_vs_Galaxy_Flye_assembly.mmap.paf | uniq >> Msyd_Mpar_shared_contigs.txt
-
-run_syny.pl -a Msyd_MPar_SYNY/*.gbff.gz -o Msyd_MPar_subset_SYNY --include Msyd_Mpar_shared_contigs.txt -t $SLURM_CPUS_PER_TASK -e 1e-10
-
-```
-
 #### Contig annotation and taxonomic classification
 
 The assembled contigs can then be annotated with `BLASTn` for taxonomic classification.
@@ -1445,11 +1367,41 @@ NCPUS=16
 MEM=128
 WALLTIME="10:00:00"
 # prepare the commands (don't forget to remove the asterisk at the end of the proteins!)
-find $WORKDIR/fun/update_results -name "*.proteins.fa" | parallel --dry-run "sed 's/[*]//g' {} > \$TMPDIR/{/} ; apptainer exec -B /home/ibar/scratch/tools -B $WORKDIR/ipscan:/output -B \$TMPDIR:/temp $NXF_SINGULARITY_CACHEDIR/interproscan_${IPSCAN_VERSION}.sif /opt/interproscan/interproscan.sh -i /temp/{/} -d /output -dra -pa -dp -goterms -f TSV -f XML -T /temp -cpu \$SLURM_CPUS_PER_TASK ; gawk '\$4~/PANTHER/' $WORKDIR/ipscan/{/}.tsv > $WORKDIR/ipscan/{/.}.panther.tsv; phobius.pl -short /temp/{/} > $WORKDIR/phobius/phobius.results.txt" > $JOBNAME.cmd
+find $WORKDIR/fun/update_results -name "*.proteins.fa" | parallel --dry-run "sed 's/[*]//g' {} > \$TMPDIR/{/} ; apptainer exec -B /home/ibar/scratch/tools -B $WORKDIR/ipscan:/output -B \$TMPDIR:/temp $NXF_SINGULARITY_CACHEDIR/interproscan_${IPSCAN_VERSION}.sif /opt/interproscan/interproscan.sh -i /temp/{/} -d /output -dra -pa -dp -goterms -f TSV -f XML -T /temp -cpu \$SLURM_CPUS_PER_TASK ; gawk '\$4~/PANTHER/' $WORKDIR/ipscan/{/}.tsv > $WORKDIR/ipscan/{/.}.panther.tsv" > $JOBNAME.cmd
 
 # submit the job array to the cluster
 sbatch -a 1-$(cat $JOBNAME.cmd | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=$NCPUS --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOBNAME.cmd,CONDA_NAME=base  ${HOME}/bin/array.slurm
 
+# phobius annotation
+NCPUS=16
+MEM=128
+WALLTIME="20:00:00"
+JOB_NAME="funannotate-phobius"
+mkdir -p $WORKDIR/phobius
+# create Slurm script
+echo '#!/bin/bash --login
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --output=%x.%j.log'"
+#SBATCH --job-name=$JOB_NAME
+#SBATCH --cpus-per-task=$NCPUS
+#SBATCH --mem=${MEM}G
+#SBATCH --time=$WALLTIME
+#SBATCH --account=a_agri_genomics
+#SBATCH --partition=general
+
+source ~/.bashrc
+conda activate $CONDA_NAME
+set -Eeo pipefail
+cd \$SLURM_SUBMIT_DIR
+# Functional annotation
+# locally
+sed 's/[*]//g' $(find $WORKDIR/fun/update_results -name *.proteins.fa)  > $WORKDIR/phobius/input.proteins.fa
+phobius.pl -short \$TMPDIR/input.proteins.fa > $WORKDIR/phobius/phobius.results.txt
+# or remote
+funannotate remote -m phobius" >  $JOB_NAME.slurm
+# submit to the cluster
+sbatch $JOB_NAME.slurm
 
 # functional annotation
 NCPUS=16
@@ -1477,11 +1429,152 @@ funannotate annotate -i fun --tmpdir /scratch/project/adna/tmp --cpus \$SLURM_CP
 # submit to the cluster
 sbatch $JOB_NAME.slurm
 
-# phobius annotation
+
+
+
+```
+
+#### Comparison to Ascetosporean genomes
+
+The assembled contigs were aligned to the newly published genomes of several Ascetosporea protists (including _Marteilia pararefringens_, see [NCBI Bioproject PRJNA1051017](https://www.ncbi.nlm.nih.gov/bioproject/PRJNA1051017); @hiltunenthorenComparativeGenomicsAscetosporea2024) using [nf-core/pairgenomealign](https://nf-co.re/pairgenomealign/1.1.0/) v1.1.0 and `mummer` [@marcaisMUMmer4FastVersatile2018].  
+
+```{bash pairgenomealign}
+# download Flye assembly from research space.
+mkdir -p /scratch/project/adna/Oyster_QX_Disease/Nanopore_sequencing/SRO_781
+rclone copy -P GURS_shared:Oyster_QX_Disease/Nanopore_sequencing/SRO_781/Galaxy_analysis Galaxy_analysis
+
+# WORK_DIR=$HOME/scratch/McDougall/Niki_QX_genome/Nanopore_sequencing # on Gowonda
+WORK_DIR=/scratch/project/adna/Oyster_QX_Disease/Comparative_Genomics # on Bunya
+mkdir -p $WORK_DIR && cd $WORK_DIR
+
+# download Ascetosporea genomes from NCBI
+conda activate genomics
+datasets download genome accession PRJNA1051017 --include genome,rna,protein,cds,gff3,gbff --filename Ascetosporea_genomes.zip
+# download metadata
+# datasets summary genome accession PRJNA1051017  | jq -r '.genes.genes[].gene | [.gene_id, .common_name, .taxname, .tax_id, .transcripts[0].accession_version, .chromosomes[0]] | @csv' > primates_mc1r.csv
+# prepare sample sheet
+echo "sample,fasta" > samplesheet.csv
+find $PWD/ncbi_dataset/data -name "*genomic.fna" | parallel --rpl "{query} s:.+/GCA_.+\.1_UU_(.+)_1_genomic.fna:\1:" echo "{query},{}" >> samplesheet.csv
+
+start_long_interactive_job
+TARGET="/scratch/project/adna/Oyster_QX_Disease/Nanopore_sequencing/SRO_781/Galaxy_analysis/Galaxy_Flye_assembly.fasta"
+~/bin/nextflow-24.04.4-all run nf-core/pairgenomealign  -c ~/.nextflow/bunya.config -profile bunya,apptainer  --target $TARGET  --input samplesheet.csv --outdir Ascetosporea_pairedgenomealign
+
+rclone copy -P Ascetosporea_pairedgenomealign GURS_shared:Oyster_QX_Disease/Comparative_Genomics/Ascetosporea_pairedgenomealign
+```
+
+
+
+```{bash mummer-genomealign}
+CONDA_NAME="genomics"
+mamba install -n $CONDA_NAME mummer4
+
+WORK_DIR=/scratch/project/adna/Oyster_QX_Disease/Comparative_Genomics # on Bunya
+mkdir -p $WORK_DIR && cd $WORK_DIR
+QUERY="/scratch/project/adna/Oyster_QX_Disease/Nanopore_sequencing/SRO_781/Galaxy_analysis/Galaxy_Flye_assembly.fasta"
+JOB_NAME="Ascetosporea_mummer"
+
+find $WORK_DIR/ncbi_dataset/data -name "*genomic.fna" | parallel --dry-run --rpl "{target} s:.+/GCA_.+\.1_UU_(.+)_1_genomic.fna:\1:" nucmer -t $SLURM_CPUS_PER_TASK -p Msyd_{target}_nucmer $QUERY {} > $JOB_NAME.cmds 
+
+
+```
+
+The contig **matches** between the 2 genomes (synteny plots), were plotted with [SYNY](https://github.com/PombertLab/SYNY) v1.2 [@julianSYNYPipelineInvestigate2024].
+
+```{bash syny}
+CONDA_NAME="syny"
+mamba create -n $CONDA_NAME syny perl-gd
+ln -s /home/ibar/miniconda3/envs/syny/lib/perl5/site_perl/5.22.0/x86_64-linux/GD $CONDA_PREFIX/lib/perl5/site_perl/
+conda activate syny
+NCORES=8
+MEM=16
+WALLTIME=1:00:00
+WORKDIR=/scratch/project/adna/Oyster_QX_Disease/Comparative_Genomics # on Bunya
+mkdir -p $WORKDIR && cd $WORKDIR
+QUERY="/scratch/project/adna/Oyster_QX_Disease/Nanopore_sequencing/SRO_781/Galaxy_analysis/Galaxy_Flye_assembly.fasta"
+fasta_to_gbff.pl -v -f $QUERY -g -o ./
+# run SYNY
+JOB_NAME="Ascetosporea_SYNY"
+find $WORKDIR/ncbi_dataset/data -name "*genomic.fna" | parallel --dry-run --rpl "{target} s:.+/GCA_.+\.1_UU_(.+)_1_genomic.fna:\1:" "fasta_to_gbff.pl -v -f {} -g -o Msyd_{target}_SYNY; ln -s $WORKDIR/Galaxy_Flye_assembly.gbff.gz Msyd_{target}_SYNY/; run_syny.pl -a Msyd_{target}_SYNY/*.gbff.gz -o Msyd_{target}_SYNY -t \$SLURM_CPUS_PER_TASK -e 1e-10" > $JOB_NAME.cmds
+ 
+# submit the job array to the cluster
+sbatch -a 1-$(cat $JOB_NAME.cmds | wc -l) --job-name=$JOB_NAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOB_NAME.cmds,CONDA_NAME=$CONDA_NAME ${WORKDIR}/../array.slurm
+
+# focus on matching contigs only (after alignment of the genomes with Minimap2 within SYNY)
+start_interactive_job
+conda activate syny
+WORKDIR=$HOME/adna/Oyster_QX_Disease/Comparative_Genomics # on Bunya
+mkdir -p $WORKDIR && cd $WORKDIR
+cut -f1 Msyd_MPar_SYNY/ALIGNMENTS/PAF/GCA_039583845_vs_Galaxy_Flye_assembly.mmap.paf | uniq > Msyd_Mpar_shared_contigs.txt
+cut -f6 Msyd_MPar_SYNY/ALIGNMENTS/PAF/GCA_039583845_vs_Galaxy_Flye_assembly.mmap.paf | uniq >> Msyd_Mpar_shared_contigs.txt
+
+run_syny.pl -a Msyd_MPar_SYNY/*.gbff.gz -o Msyd_MPar_subset_SYNY --include Msyd_Mpar_shared_contigs.txt -t $SLURM_CPUS_PER_TASK -e 1e-10
+
+```
+
+The _Marteilia pararefringens_ proteins used for the phylogenetic analysis in @hiltunenthorenComparativeGenomicsAscetosporea2024 were retrieved from the protein alignments in the [FigShare repository](https://figshare.com/articles/dataset/1_Multiple_sequence_alignments/24874638) and were used to search for orthologs in the predicted proteome of _M. sydneyi_.
+
+```{bash rhizaria-phylo}
+CONDA_NAME="genomics"
+mamba install -n $CONDA_NAME mafft
+WORKDIR=$HOME/adna/Oyster_QX_Disease/Comparative_Genomics
+JOB_NAME="rhizaria-phylo"
+mkdir -p $WORKDIR/$JOB_NAME/protein_align && cd $WORKDIR/$JOB_NAME
+
+# download protein alignments
+aria2c --header 'Host: figshare.com' --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0' --header 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' --header 'Accept-Language: en-AU,en-US;q=0.7,en;q=0.3' --referer 'https://figshare.com/' --header 'DNT: 1' --header 'Cookie: fig_tracker_client=49202a34-9e11-4e4b-9617-a6cf1dc5e3c1; GLOBAL_FIGSHARE_SESSION_KEY=47879e13a067258bd9f5eb31116af03453281755ad585889bf0d44f7896a326500f571dc; FIGINSTWEBIDCD=47879e13a067258bd9f5eb31116af03453281755ad585889bf0d44f7896a326500f571dc; figshare-cookies-essential=true; figshare-cookies-performance=true' --header 'Upgrade-Insecure-Requests: 1' --header 'Sec-Fetch-Dest: document' --header 'Sec-Fetch-Mode: navigate' --header 'Sec-Fetch-Site: same-origin' --header 'Sec-Fetch-User: ?1' --header 'Sec-GPC: 1' 'https://figshare.com/ndownloader/articles/24874638/versions/1' --out " $WORKDIR/$JOB_NAME/protein_align/24874638.zip"
+unzip 24874638.zip
+
+# remove gaps from MSA
+ls -1 *.mafft.fasta | parallel --dry-run --rpl "{gene} s:\.mafft\.fasta::" "sed -r 's/-//g' {} | reformat.sh in=stdin.fa out=stdout.fa fixjunk > {gene}.prots.fa"
+
+# extract Marteilia pararefringens proteins from the MSAs
+grep "Marteilia" *.mafft.fasta | cut -f1 -d: | parallel --dry-run --rpl "{gene} s:\.mafft.fasta::" "seqkit grep -n -r -p \"Marteilia\" {} | sed -r 's/>.+/>{gene}_Marteilia_pararefringens_M18/; s/-//g' | reformat.sh in=stdin.fa out=stdout.fa fixjunk > {gene}_Marteilia_pararefringens.fa"
+# combine into a single multi-protein fasta
+cat *Marteilia_pararefringens.fa > Marteilia_pararefringens_proteins.fa
+
+# or concatenate all the genes from each taxa
+grep ">" rps16.mafft.fasta | sed 's/>//' > taxa.list 
+parallel --dry-run --rpl "{clean_taxa} s:_N/A::g" --rpl "{gene} s:\.mafft.fasta::" "seqkit grep -n -r -p \"{2}\" {1} | sed -r 's/>.+/>{1 gene}_{2 clean_taxa}/; s/-//g' | reformat.sh in=stdin.fa out=stdout.fa fixjunk >> {2 clean_taxa}.proteins.fa" ::: $(ls -1 *.mafft.fasta) ::: $(cat taxa.list) > arrange_prots_by_taxa.cmds
+
+bash arrange_prots_by_taxa.cmds
+# concatenate all the prots for each taxa
+
+
+
+# seqkit replace -p "(.)" -r "{fbne}_\$1"
+
+grep ">" rps16.mafft.fasta
+
+```
+
+OrthoFinder [@emmsOrthoFinderPhylogeneticOrthology2019] was used to compare the transcriptomes of the 4 Ascetosporea species (using the CDs as input).
+
+```{bash orthofinder}
+# setup conda environment
+CONDA_NAME="genomics"
+mamba install -n $CONDA_NAME orthofinder
+conda activate $CONDA_NAME
+#setup working folder
+WORKDIR=/scratch/project/adna/Oyster_QX_Disease/Comparative_Genomics
+mkdir -p $WORKDIR/PRJNA1051017 && cd $WORKDIR/PRJNA1051017
+
+# download Ascetosporea genome datasets
+datasets download genome accession PRJNA1051017 --include genome,rna,protein,cds,gff3,gbff --filename Ascetosporea_genomes.zip
+unzip Ascetosporea_genomes.zip
+
+# setup analysis folder and link input files to it
+JOB_NAME="rhizaria-orthofinder"
+mkdir -p $WORKDIR/$JOB_NAME/input_transcripts && cd $WORKDIR/$JOB_NAME
+find $WORKDIR/PRJNA1051017 -name "GCA_*genomic.fna" | parallel --dry-run --rpl "{target} s:.+/GCA_.+\.1_UU_(.+)_1_genomic.fna:\1:" "ln -s {//}/cds_from_genomic.fna $WORKDIR/$JOB_NAME/input_transcripts/{target}.cds.fa"
+# link Msyd cds file
+ln -s $(find /scratch/project/adna/Oyster_QX_Disease/QX_genome_annotation/fun/update_results/ -name *.cds-transcripts.fa) $WORKDIR/$JOB_NAME/input_transcripts/Msyd.cds.fa
+
+# run OrthoFinder
 NCPUS=16
-MEM=128
+MEM=72
 WALLTIME="20:00:00"
-JOB_NAME="funannotate-phobius"
+
 # create Slurm script
 echo '#!/bin/bash --login
 #SBATCH --nodes=1
@@ -1498,16 +1591,61 @@ source ~/.bashrc
 conda activate $CONDA_NAME
 set -Eeo pipefail
 cd \$SLURM_SUBMIT_DIR
-# Functional annotation
-funannotate remote -m phobius" >  $JOB_NAME.slurm
+# OrthoFinder
+orthofinder -p /scratch/project/adna/tmp -d -t \$SLURM_CPUS_PER_TASK -f input_transcripts" >  $JOB_NAME.slurm
 # submit to the cluster
 sbatch $JOB_NAME.slurm
-funannotate remote -m phobius
-
 
 ```
 
+This didn't result in sufficient matches, so the same analysis was repeated at the protein level.
+```{bash orthofinder-prot}
+# setup conda environment
+CONDA_NAME="genomics"
+mamba install -n $CONDA_NAME orthofinder
+conda activate $CONDA_NAME
+#setup working folder
+WORKDIR=/scratch/project/adna/Oyster_QX_Disease/Comparative_Genomics
+mkdir -p $WORKDIR/PRJNA1051017 && cd $WORKDIR/PRJNA1051017
 
+# download Ascetosporea genome datasets
+datasets download genome accession PRJNA1051017 --include genome,rna,protein,cds,gff3,gbff --filename Ascetosporea_genomes.zip
+unzip Ascetosporea_genomes.zip
+
+# setup analysis folder and link input files to it
+JOB_NAME="rhizaria-orthofinder"
+mkdir -p $WORKDIR/$JOB_NAME/input_proteins && cd $WORKDIR/$JOB_NAME
+find $WORKDIR/PRJNA1051017 -name "GCA_*genomic.fna" | parallel --dry-run --rpl "{target} s:.+/GCA_.+\.1_UU_(.+)_1_genomic.fna:\1:" "ln -s {//}/protein.faa $WORKDIR/$JOB_NAME/input_proteins/{target}.proteins.faa"
+# link Msyd cds file
+ln -s $(find /scratch/project/adna/Oyster_QX_Disease/QX_genome_annotation/fun/update_results/ -name *.proteins.fa) $WORKDIR/$JOB_NAME/input_proteins/MSyd.proteins.faa
+
+# run OrthoFinder
+NCPUS=16
+MEM=72
+WALLTIME="20:00:00"
+JOB_NAME="rhizaria-orthofinder-prots"
+# create Slurm script
+echo '#!/bin/bash --login
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --output=%x.%j.log'"
+#SBATCH --job-name=$JOB_NAME
+#SBATCH --cpus-per-task=$NCPUS
+#SBATCH --mem=${MEM}G
+#SBATCH --time=$WALLTIME
+#SBATCH --account=a_agri_genomics
+#SBATCH --partition=general
+
+source ~/.bashrc
+conda activate $CONDA_NAME
+set -Eeo pipefail
+cd \$SLURM_SUBMIT_DIR
+# OrthoFinder
+orthofinder -p /scratch/project/adna/tmp -t \$SLURM_CPUS_PER_TASK -f input_proteins" >  $JOB_NAME.slurm
+# submit to the cluster
+sbatch $JOB_NAME.slurm
+
+```
 
 ### stLFR Sequencing and Assembly
 
