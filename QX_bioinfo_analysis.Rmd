@@ -713,7 +713,7 @@ sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=
 <!-- set -Eeo pipefail -->
 <!-- cd \$SLURM_SUBMIT_DIR -->
 
-<!-- apptainer exec -B $WORKDIR:/scratch --no-mount /home $NXF_APPTAINER_CACHEDIR/docker.io-macmaneslab-orp-2.3.3.img bash -c \"source /home/orp/Oyster_River_Protocol/software/anaconda/install/bin/activate orp && unset -f which && cd /scratch/$JOBNAME && /home/orp/Oyster_River_Protocol/oyster.mk TPM_FILT=1 CPU=\$SLURM_CPUS_PER_TASK MEM=$MEM  READ1=/scratch/SRO_TransPi_assembly/input_files/unfixrm_SRO_control_R1.cor.fastq.gz READ2=/scratch/SRO_TransPi_assembly/input_files/unfixrm_SRO_control_R2.cor.fastq.gz RUNOUT=SRO_trans_orp\" " >  $JOBNAME.slurm -->
+<!-- apptainer exec -B /scratch/project/adna  -B $WORKDIR:/workdir --no-mount /home $NXF_APPTAINER_CACHEDIR/docker.io-macmaneslab-orp-2.3.3.img bash -c \"source /home/orp/Oyster_River_Protocol/software/anaconda/install/bin/activate orp && unset -f which && cd /workdir/$JOBNAME && /home/orp/Oyster_River_Protocol/oyster.mk TPM_FILT=1 CPU=\$SLURM_CPUS_PER_TASK MEM=$MEM  READ1=/workdir/SRO_TransPi_assembly/input_files/unfixrm_SRO_control_R1.cor.fastq.gz READ2=/workdir/SRO_TransPi_assembly/input_files/unfixrm_SRO_control_R2.cor.fastq.gz RUNOUT=SRO_trans_orp BUSCO_CONFIG_FILE=config.ini \" " >  $JOBNAME.slurm -->
 
 <!-- # submit the job -->
 <!-- sbatch $JOBNAME.slurm -->
