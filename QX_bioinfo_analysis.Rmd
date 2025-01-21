@@ -1817,6 +1817,12 @@ sbatch SRO_stlfr_meta.slurm
 
 ```
 
+All the generated data was copied to a cloud-based storage (Griffith Research Space and SharePoint)
+
+```{bash backup}
+rclone copy -P -L --exclude "**work/*" --exclude "**nextflow/*" --exclude "**.nextflow*" Oyster_QX_Disease Niki_QX:General/Niki_Nenadic/Niki_PhD/SRO_QX_genomic_data
+```
+
 ## General information
 
 This document was last updated at `r Sys.time()` using R Markdown (built with `r R.version.string`). The source code for this website can be found on <https://github.com/IdoBar/QX_bioinfo_analysis/tree/genome>.
