@@ -68,7 +68,7 @@ pacman::p_load(char = basename(fav_packages))
 RNA was extracted from the digestive gland of 3 healthy Sydney Rock Oysters (SRO, _Saccostrea glomerata_) and 3 SRO infected with QX disease (as confirmed by PCR assay on DNA extracted from each tissue) using the Trizol method. The RNA was sent for sequencing on an Illumina NovaSeq 6000, generating 150 bp paired-end reads (Macrogen, Korea). 
 
 #### Processing RNA-Seq reads
-The reads were downloaded to the Griffith University High Performance Computing cluster 'Gowonda' and the University of Queensland High Performance Computing cluster 'Bunya' (access provided by The Queensland Cyber Infrastructure Foundation (QCIF)) for bioinformatics processing and analyses, following the guidelines by Harvard Informatics (see [link](https://github.com/harvardinformatics/TranscriptomeAssemblyTools)) . 
+The reads were downloaded to the Griffith University High Performance Computing cluster 'Gowonda' and the University of Queensland High Performance Computing cluster 'Bunya' (access provided by The Queensland Cyber Infrastructure Foundation (QCIF)) for bioinformatics processing and analyses, following the guidelines by Harvard Informatics (see [link](https://github.com/harvardinformatics/TranscriptomeAssemblyTools){target="_blank"}) . 
 These included error-correction with Rcorrector v1.5.0 [@songRcorrectorEfficientAccurate2015a] of the reads from each set (healthy SRO and QX-infected SRO) and removal of "unfixable" reads.
 
 ```{bash prep-rnaseq-reads}
@@ -229,30 +229,30 @@ sbatch rm_unfixable_qx.slurm
 ```
 
 #### Transcriptome assembly and Annotation with TransPi
-A _De-Novo_ transcriptome was assembled from the combined error-corrected reads using [TransPi](https://palmuc.github.io/TransPi) [@rivera-vicensTransPiComprehensiveTRanscriptome2022]. In brief, TransPi performs a complete transcriptome assembly, basic annotation and assessment pipeline using well-established methods:  
+A _De-Novo_ transcriptome was assembled from the combined error-corrected reads using [TransPi](https://palmuc.github.io/TransPi){target="_blank"} [@rivera-vicensTransPiComprehensiveTRanscriptome2022]. In brief, TransPi performs a complete transcriptome assembly, basic annotation and assessment pipeline using well-established methods:  
 
  * Trimming of low-quality bases and removal of sequencing adaptors with Fastp [@chenFastpUltrafastAllone2018]  
- * Ribosomal RNA (rRNA) removal matching against the [SILVA rRNA database](https://www.arb-silva.de/) [@quastSILVARibosomalRNA2012]  
+ * Ribosomal RNA (rRNA) removal matching against the [SILVA rRNA database](https://www.arb-silva.de/){target="_blank"} [@quastSILVARibosomalRNA2012]  
  * Transcriptome assembly using a range of tools, including Trinity, SPAdes, Trans-ABySS and SOAPdenovo-Trans, with a range of k-mers (see a comprehensive comparison of these tools at @holzerNovoTranscriptomeAssembly2019 and of k-mer selection at @haznedarogluOptimizationNovoTranscriptome2012)   
- * Collapsing redundant transcripts with [EvidentialGene](http://arthropods.eugenes.org/EvidentialGene/)  
+ * Collapsing redundant transcripts with [EvidentialGene](http://arthropods.eugenes.org/EvidentialGene/){target="_blank"}  
  * Annotation of the assemblies against UniProt databases  
- * Building a [Trinotate](https://github.com/Trinotate/Trinotate/wiki) database for each assembly and its annotation  
+ * Building a [Trinotate](https://github.com/Trinotate/Trinotate/wiki){target="_blank"} database for each assembly and its annotation  
  
 TransPi needs to be installed and configured (download annotation databases and set their paths in a `nextflow.config` file). Unfortunately, a lot of the configuration for TransPi to work on GU Gowonda needs to be done manually, including downloading the Singularity containers and setting up the resources required for each process - see the current configuration and the following reported issues:  
 
-1. Missing BUSCO container in the configuration - [Issue #53](https://github.com/PalMuc/TransPi/issues/53#issuecomment-1268051333)  
-2. The precheck script fails to download the UniProt database due to change in the API - see [Issue #52](https://github.com/PalMuc/TransPi/issues/52)  
-3. Use the single TransPiContainer profile to fix issues with some of the tools (see the [documentation](https://palmuc.github.io/TransPi/#_containers))  
+1. Missing BUSCO container in the configuration - [Issue #53](https://github.com/PalMuc/TransPi/issues/53#issuecomment-1268051333){target="_blank"}  
+2. The precheck script fails to download the UniProt database due to change in the API - see [Issue #52](https://github.com/PalMuc/TransPi/issues/52){target="_blank"}  
+3. Use the single TransPiContainer profile to fix issues with some of the tools (see the [documentation](https://palmuc.github.io/TransPi/#_containers){target="_blank"})  
 4. Trinity and Velvet-Oases jobs are failing though they seem to complete without a problem (no output files are copied across from the compute nodes). It can be one of these possibilities:  
     a. Maybe I simply ran out of space (in `/scratch/project/adna`), I've requested additional storage on the `adna` folder on Bunya (now I have 10TB there)  
     b. It may be related to the use of `$TMPDIR` on the compute nodes (change the flag `scracth=true` into `scratch='/scratch/project/adna/tmp'` in `~/.nextflow/bunya.config`)  
-    c. `$SINGULARITY_TMPDIR` that is running out of space or not properly configured, see this [thread on GitHub](https://github.com/nextflow-io/nextflow/issues/2786#issuecomment-1173975771)  
+    c. `$SINGULARITY_TMPDIR` that is running out of space or not properly configured, see this [thread on GitHub](https://github.com/nextflow-io/nextflow/issues/2786#issuecomment-1173975771){target="_blank"}  
     d. Another option is that Bunya is using Apptainer and not Singularity, so maybe I need to configure a profile to use Apptainer instead (v22.11.1).  
     e. Found the problem!!! It appears that the way TransPi is writing the version numbers throws an error (when `$v` is defined multiple times). I fixed it by using `printf` statement instead of the multiple `echo` ones. 
     f. Some processes (such as `summary_custom_uniprot`) fail due to `set -o pipefail` directive (complex pipelines, including `grep`, etc.). It can be fixed by adding `set +o pipefail` to the top of the script.  
-5. `Rnammer` fails - it needs to be setup to use `hmmsearch2` (which can be downloaded from [this link](http://eddylab.org/software/hmmer/hmmer-2.3.2.tar.gz) and remove the `--cpu 1` flag from `core-rnammer`, see details [here](https://groups.google.com/g/trinityrnaseq-users/c/WZjkGSMUT3I))  
-6. `rnaQUAST` fails -- it requires an additional tool (GeneMark S-T) to be installed separately and put in the container's `$PATH` (add `export PATH=\$PATH:\$HOME/etc/tools/Annotation/GeneMarkST/` at the top of the script of the rnaquast process in the main nextflow). See details [here](https://github.com/ablab/rnaquast/issues/5#issuecomment-823996456).  
-7. `signalp` fails -- need to edit the executable to allow it to find where it is being run from and increase the sequence limit (see [here](https://www.seqanswers.com/forum/bioinformatics/bioinformatics-aa/29132-how-to-increase-sequence-limit-in-signalp#post236326)) with the following command:  
+5. `Rnammer` fails - it needs to be setup to use `hmmsearch2` (which can be downloaded from [this link](http://eddylab.org/software/hmmer/hmmer-2.3.2.tar.gz){target="_blank"} and remove the `--cpu 1` flag from `core-rnammer`, see details [here](https://groups.google.com/g/trinityrnaseq-users/c/WZjkGSMUT3I){target="_blank"})  
+6. `rnaQUAST` fails -- it requires an additional tool (GeneMark S-T) to be installed separately and put in the container's `$PATH` (add `export PATH=\$PATH:\$HOME/etc/tools/Annotation/GeneMarkST/` at the top of the script of the rnaquast process in the main nextflow). See details [here](https://github.com/ablab/rnaquast/issues/5#issuecomment-823996456){target="_blank"}.  
+7. `signalp` fails -- need to edit the executable to allow it to find where it is being run from and increase the sequence limit (see [here](https://www.seqanswers.com/forum/bioinformatics/bioinformatics-aa/29132-how-to-increase-sequence-limit-in-signalp#post236326){target="_blank"}) with the following command:  
 `sed -ri.bak 's|SIGNALP} = '\''.+|SIGNALP} = "\$FindBin::RealBin"|; s/BEGIN/use FindBin\;
 \nBEGIN/; s/MAX_ALLOWED_ENTRIES=.+/MAX_ALLOWED_ENTRIES=2000000;/' signalp`
 8. Process `summary_custom_uniprot` fails because of weird table merging and file redundancies done in bash. I edited `Tranbspi/bin/custom_uniprot_hits.R` to perform these tasks and export the `csv` file with the results.  
@@ -562,8 +562,8 @@ sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=
 
 #### Functional annotation of predicted proteins
 
-The predicted proteins in the transcriptomes were further annotated using InterProScan v5.66-98.0 [@jonesInterProScanGenomescaleProtein2014; @mitchellInterPro2019Improving2019] to assign protein families, motifs and ontologies to assist with transcript-to-gene annotation. (An alternative method is with [FA-nf](https://github.com/guigolab/FA-nf))
-Notice the issues mentioned above with SignalP and TMHMM and a new one for Phobius (see discussions and solutions on [GitHub](https://github.com/nextgenusfs/funannotate/issues/696#issuecomment-1057663190) and [BioStar](https://www.biostars.org/p/238642/))
+The predicted proteins in the transcriptomes were further annotated using InterProScan v5.66-98.0 [@jonesInterProScanGenomescaleProtein2014; @mitchellInterPro2019Improving2019] to assign protein families, motifs and ontologies to assist with transcript-to-gene annotation. (An alternative method is with [FA-nf](https://github.com/guigolab/FA-nf){target="_blank"})
+Notice the issues mentioned above with SignalP and TMHMM and a new one for Phobius (see discussions and solutions on [GitHub](https://github.com/nextgenusfs/funannotate/issues/696#issuecomment-1057663190){target="_blank"} and [BioStar](https://www.biostars.org/p/238642/){target="_blank"})
 
 ```{bash prot-annotation}
 cd ~/adna/tools
@@ -633,9 +633,9 @@ These annotation tables were added to the Trinotate database of the assemblies.
 
 #### Quality assessments of assemblies
 
-The transcriptome assemblies were assessed and compared using [rnaQuast](https://github.com/ablab/rnaquast) v2.2.3 [@bushmanovaRnaQUASTQualityAssessment2016], [TransRate](http://hibberdlab.com/transrate) v1.0.3 [@smith-unnaTransRateReferencefreeQuality2016] and [DETONATE](https://deweylab.biostat.wisc.edu/detonate/) v1.11 [@liEvaluationNovoTranscriptome2014b], as suggested in the Trinity [documentation](https://github.com/trinityrnaseq/trinityrnaseq/wiki/Transcriptome-Assembly-Quality-Assessment) and by @beheraPlantTranscriptomeAssembly2021.
+The transcriptome assemblies were assessed and compared using [rnaQuast](https://github.com/ablab/rnaquast){target="_blank"} v2.2.3 [@bushmanovaRnaQUASTQualityAssessment2016], [TransRate](http://hibberdlab.com/transrate){target="_blank"} v1.0.3 [@smith-unnaTransRateReferencefreeQuality2016] and [DETONATE](https://deweylab.biostat.wisc.edu/detonate/){target="_blank"} v1.11 [@liEvaluationNovoTranscriptome2014b], as suggested in the Trinity [documentation](https://github.com/trinityrnaseq/trinityrnaseq/wiki/Transcriptome-Assembly-Quality-Assessment){target="_blank"} and by @beheraPlantTranscriptomeAssembly2021.
 
-The transcripts were compared to the Pacific Oyster (*Crassostrea gigas*) proteins, which were obtained from NCBI (Accession [GCA_902806645.1](https://www.ncbi.nlm.nih.gov/datasets/genome/GCA_902806645.1/)) [@penalozaChromosomelevelGenomeAssembly2021] 
+The transcripts were compared to the Pacific Oyster (*Crassostrea gigas*) proteins, which were obtained from NCBI (Accession [GCA_902806645.1](https://www.ncbi.nlm.nih.gov/datasets/genome/GCA_902806645.1/){target="_blank"}) [@penalozaChromosomelevelGenomeAssembly2021] 
 
 ```{bash eval-assembly}
 CONDA_NAME=rnaseq
@@ -687,7 +687,7 @@ sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=
 ```
 
 <!-- ### SRO transcriptome assembly with ORP -->
-<!-- The SRO transcriptome of non-infected (control) tissues was also assembled with the Oyster River Protocol pipeline [@macmanesOysterRiverProtocol2018a]. -->
+<!-- The SRO transcriptome of non-infected (control) tissues was also assembled with the [Oyster River Protocol](https://oyster-river-protocol.readthedocs.io/en/latest/index.html){target="_blank"} pipeline [@macmanesOysterRiverProtocol2018a]. -->
 
 <!-- ```{bash orp-assembly} -->
 <!-- # prepare slurm script -->
@@ -713,18 +713,21 @@ sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=
 <!-- set -Eeo pipefail -->
 <!-- cd \$SLURM_SUBMIT_DIR -->
 
-<!-- apptainer exec -B /scratch/project/adna  -B $WORKDIR:/workdir --no-mount /home $NXF_APPTAINER_CACHEDIR/docker.io-macmaneslab-orp-2.3.3.img bash -c \"source /home/orp/Oyster_River_Protocol/software/anaconda/install/bin/activate orp && unset -f which && cd /workdir/$JOBNAME && /home/orp/Oyster_River_Protocol/oyster.mk TPM_FILT=1 CPU=\$SLURM_CPUS_PER_TASK MEM=$MEM  READ1=/workdir/SRO_TransPi_assembly/input_files/unfixrm_SRO_control_R1.cor.fastq.gz READ2=/workdir/SRO_TransPi_assembly/input_files/unfixrm_SRO_control_R2.cor.fastq.gz RUNOUT=SRO_trans_orp BUSCO_CONFIG_FILE=config.ini \" " >  $JOBNAME.slurm -->
+<!-- apptainer exec -B /scratch/project/adna --no-mount /home $NXF_APPTAINER_CACHEDIR/docker.io-macmaneslab-orp-2.3.3.img bash -c \"cd $WORKDIR/$JOBNAME && sed 's|--config \\\${MAKEDIR}/software/config.ini|--config \\\${BUSCO_CONFIG_FILE}|; s|\\\${MAKEDIR}/busco_dbs|\\\${BUSCODB}|' /home/orp/Oyster_River_Protocol/oyster.mk > ./oyster.mk && chmod +x ./oyster.mk && source /home/orp/Oyster_River_Protocol/software/anaconda/install/bin/activate orp && unset -f which &&  ./oyster.mk TPM_FILT=1 CPU=\$SLURM_CPUS_PER_TASK MEM=$MEM MAKEDIR=/home/orp/Oyster_River_Protocol BUSCODB=/scratch/project/adna/tools/TransPi/DBs/busco_db READ1=$WORKDIR/SRO_TransPi_assembly/input_files/unfixrm_SRO_control_R1.cor.fastq.gz READ2=$WORKDIR/SRO_TransPi_assembly/input_files/unfixrm_SRO_control_R2.cor.fastq.gz RUNOUT=SRO_trans_orp BUSCO_CONFIG_FILE=config.ini \" " >  $JOBNAME.slurm -->
 
 <!-- # submit the job -->
 <!-- sbatch $JOBNAME.slurm -->
 
+<!-- # archive working folders (to facilitate quicker transfer) -->
+<!-- tar -czvf $WORKDIR/$JOBNAME/orthofuse/SRO_trans_orp/working.tar.gz $WORKDIR/$JOBNAME/orthofuse/SRO_trans_orp/working && rm -rf $WORKDIR/$JOBNAME/orthofuse/SRO_trans_orp/working -->
+<!-- tar -czvf $WORKDIR/$JOBNAME/rcorr.tar.gz $WORKDIR/$JOBNAME/rcorr && rm -rf $WORKDIR/$JOBNAME/rcorr -->
 
 <!-- ``` -->
 
 
 #### Gene Expression Analysis
 
-The chosen most representative transcriptome assembly for SRO (Rcorrected SRO non-infected TransPi assembly) was used as reference to quantify gene/transcript abundance using [Salmon](https://salmon.readthedocs.io/en/latest/salmon.html) [@patroSalmonProvidesFast2017; @loveSwimmingDownstreamStatistical2018].
+The chosen most representative transcriptome assembly for SRO (Rcorrected SRO non-infected TransPi assembly) was used as reference to quantify gene/transcript abundance using [Salmon](https://salmon.readthedocs.io/en/latest/salmon.html){target="_blank"} [@patroSalmonProvidesFast2017; @loveSwimmingDownstreamStatistical2018].
 
 ```{bash salmon-quant}
 CONDA_NAME=genomics
@@ -754,7 +757,7 @@ sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=
 
 ```
 
-Expression-based clustering of transcripts was performed with [RapClust](https://github.com/COMBINE-lab/RapClust) [@srivastavaAccurateFastLightweight2016a]. 
+Expression-based clustering of transcripts was performed with [RapClust](https://github.com/COMBINE-lab/RapClust){target="_blank"} [@srivastavaAccurateFastLightweight2016a]. 
 
 ```{bash rapclust}
 CONDA_NAME=genomics
@@ -779,6 +782,18 @@ echo "RapClust --config $JOBNAME.yaml" > $JOBNAME.cmds
 # submit the job array to the cluster
 sbatch -a 1 --job-name=$JOBNAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOBNAME.cmds,CONDA_NAME=$CONDA_NAME ${WORKDIR}/array.slurm
 
+```
+
+All the generated data was copied to a cloud-based storage (Griffith Research Space and SharePoint)
+
+```{bash rclone-copy}
+WORKDIR=/home/ibar/adna/Oyster_QX_Disease
+rclone copy -P -L --exclude "**work/*" --exclude "**nextflow/*" --exclude "**.nextflow*" $WORKDIR Niki_QX:General/Niki_Nenadic/Niki_PhD/SRO_QX_genomic_data
+```
+
+Then repeat with these flags to copy html files (a [known SharePoint-specific issue](https://rclone.org/onedrive/#unexpected-file-size-hash-differences-on-sharepoint){target="_blank"})
+```{bash rclone-copy2}
+rclone copy -P -L --ignore-checksum --ignore-size --exclude "**work/*" --exclude "**nextflow/*" --exclude "**.nextflow*" $WORKDIR Niki_QX:General/Niki_Nenadic/Niki_PhD/SRO_QX_genomic_data
 ```
 
 
