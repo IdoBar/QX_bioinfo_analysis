@@ -793,7 +793,7 @@ rclone copy -P -L --exclude "**work/*" --exclude "**nextflow/*" --exclude "**.ne
 
 Then repeat with these flags to copy html files (a [known SharePoint-specific issue](https://rclone.org/onedrive/#unexpected-file-size-hash-differences-on-sharepoint){target="_blank"})
 ```{bash rclone-copy2}
-rclone copy -P -L --ignore-checksum --ignore-size --exclude "**work/*" --exclude "**nextflow/*" --exclude "**.nextflow*" $WORKDIR Niki_QX:General/Niki_Nenadic/Niki_PhD/SRO_QX_genomic_data
+rclone copy -P -L --ignore-checksum --ignore-size --include "**/*.html" $WORKDIR Niki_QX:General/Niki_Nenadic/Niki_PhD/SRO_QX_genomic_data
 ```
 
 
