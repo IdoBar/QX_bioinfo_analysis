@@ -800,11 +800,11 @@ sbatch -a 1 --job-name=$JOBNAME --cpus-per-task=$NCORES --mem=${MEM}G --time=$WA
 ## Methods
 
 ### DNA Extraction
-High molecular DNA was extracted using the Monarch® HMW DNA Extraction Kit for Tissue (New England Biolabs, [NEB T3060](https://www.neb.com/en-au/products/t3060-monarch-hmw-dna-extraction-kit-for-tissue#Product%20Information)) from digestive gland tissue of Sydney rock oysters infected with QX disease. The samples were confirmed to be infected with QX (contain _M. sydneyi_) by a PCR assay using the extracted DNA as template, as described by XXX. DNA integrity, purity and quantity were assessed by gel electrophoresis, Nanodrop and Qubit, respectively.    
+High molecular DNA was extracted using the Monarch® HMW DNA Extraction Kit for Tissue (New England Biolabs, [NEB T3060](https://www.neb.com/en-au/products/t3060-monarch-hmw-dna-extraction-kit-for-tissue#Product%20Information){target="_blank"}) from digestive gland tissue of Sydney rock oysters infected with QX disease. The samples were confirmed to be infected with QX (contain _M. sydneyi_) by a PCR assay using the extracted DNA as template, as described by XXX. DNA integrity, purity and quantity were assessed by gel electrophoresis, Nanodrop and Qubit, respectively.    
 
 ### Nanopore Sequencing and Basecalling
-The DNA was prepared for long-read Nanopore sequencing by removal of contaminants (Qiagne [DNeasy PowerClean CleanUp Kit](https://www.qiagen.com/us/products/discovery-and-translational-research/dna-rna-purification/dna-purification/microbial-dna/dneasy-powerclean-cleanup-kit)) and short fragments (ONT Short Fragment Eliminator Kit, EXP-SFE001), followed by ligation of sequencing adapters using the Ligation sequencing DNA V14 (ONT SQK-LSK114) or the Rapid Barcoding kit (SQK-RBK110.96) for sequencing on an Oxford Nanopore Mk1C with a MINFLO114 flowcell (R10) or on a PromethION R9.4.1 flowcell, respectively.   
-PromethION data was first demultiplexed with Guppy, then the resulting `fast5` files were converted to `pod5` files using [pod5 package](https://pod5-file-format.readthedocs.io/en/0.2.0/docs/tools.html).  
+The DNA was prepared for long-read Nanopore sequencing by removal of contaminants (Qiagne [DNeasy PowerClean CleanUp Kit](https://www.qiagen.com/us/products/discovery-and-translational-research/dna-rna-purification/dna-purification/microbial-dna/dneasy-powerclean-cleanup-kit){target="_blank"}) and short fragments (ONT Short Fragment Eliminator Kit, EXP-SFE001), followed by ligation of sequencing adapters using the Ligation sequencing DNA V14 (ONT SQK-LSK114) or the Rapid Barcoding kit (SQK-RBK110.96) for sequencing on an Oxford Nanopore Mk1C with a MINFLO114 flowcell (R10) or on a PromethION R9.4.1 flowcell, respectively.   
+PromethION data was first demultiplexed with Guppy, then the resulting `fast5` files were converted to `pod5` files using [pod5 package](https://pod5-file-format.readthedocs.io/en/0.2.0/docs/tools.html){target="_blank"}.  
 
 ```{bash setup-conda}
 # download and install conda/mamba
@@ -1522,9 +1522,9 @@ JOB_NAME="rhizaria-phylo"
 mkdir -p $WORKDIR/$JOB_NAME/protein_align && cd $WORKDIR/$JOB_NAME
 
 # download protein alignments
-aria2c --header 'Host: figshare.com' --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0' --header 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' --header 'Accept-Language: en-AU,en-US;q=0.7,en;q=0.3' --referer 'https://figshare.com/' --header 'DNT: 1' --header 'Cookie: fig_tracker_client=49202a34-9e11-4e4b-9617-a6cf1dc5e3c1; GLOBAL_FIGSHARE_SESSION_KEY=47879e13a067258bd9f5eb31116af03453281755ad585889bf0d44f7896a326500f571dc; FIGINSTWEBIDCD=47879e13a067258bd9f5eb31116af03453281755ad585889bf0d44f7896a326500f571dc; figshare-cookies-essential=true; figshare-cookies-performance=true' --header 'Upgrade-Insecure-Requests: 1' --header 'Sec-Fetch-Dest: document' --header 'Sec-Fetch-Mode: navigate' --header 'Sec-Fetch-Site: same-origin' --header 'Sec-Fetch-User: ?1' --header 'Sec-GPC: 1' 'https://figshare.com/ndownloader/articles/24874638/versions/1' --out " $WORKDIR/$JOB_NAME/protein_align/24874638.zip"
-unzip 24874638.zip
+aria2c --header 'Host: figshare.com' --user-agent 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0' --header 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' --header 'Accept-Language: en-AU,en-US;q=0.7,en;q=0.3' --referer 'https://figshare.com/' --header 'DNT: 1' --header 'Cookie: fig_tracker_client=49202a34-9e11-4e4b-9617-a6cf1dc5e3c1; GLOBAL_FIGSHARE_SESSION_KEY=47879e13a067258bd9f5eb31116af03453281755ad585889bf0d44f7896a326500f571dc; FIGINSTWEBIDCD=47879e13a067258bd9f5eb31116af03453281755ad585889bf0d44f7896a326500f571dc; figshare-cookies-essential=true; figshare-cookies-performance=true' --header 'Upgrade-Insecure-Requests: 1' --header 'Sec-Fetch-Dest: document' --header 'Sec-Fetch-Mode: navigate' --header 'Sec-Fetch-Site: same-origin' --header 'Sec-Fetch-User: ?1' --header 'Sec-GPC: 1' 'https://figshare.com/ndownloader/articles/24874638/versions/1' --out " $WORKDIR/$JOB_NAME/protein_align/24874638.zip" && unzip $WORKDIR/$JOB_NAME/protein_align/24874638.zip
 
+cd $WORKDIR/$JOB_NAME/protein_align
 # remove gaps from MSA
 ls -1 *.mafft.fasta | parallel --dry-run --rpl "{gene} s:\.mafft\.fasta::" "sed -r 's/-//g' {} | reformat.sh in=stdin.fa out=stdout.fa fixjunk > {gene}.prots.fa"
 
@@ -1534,17 +1534,17 @@ grep "Marteilia" *.mafft.fasta | cut -f1 -d: | parallel --dry-run --rpl "{gene} 
 cat *Marteilia_pararefringens.fa > Marteilia_pararefringens_proteins.fa
 
 # or concatenate all the genes from each taxa
-grep ">" rps16.mafft.fasta | sed 's/>//' > taxa.list 
-parallel --dry-run --rpl "{clean_taxa} s:_N/A::g" --rpl "{gene} s:\.mafft.fasta::" "seqkit grep -n -r -p \"{2}\" {1} | sed -r 's/>.+/>{1 gene}_{2 clean_taxa}/; s/-//g' | reformat.sh in=stdin.fa out=stdout.fa fixjunk >> {2 clean_taxa}.proteins.fa" ::: $(ls -1 *.mafft.fasta) ::: $(cat taxa.list) > arrange_prots_by_taxa.cmds
+grep ">" *.mafft.fasta | cut -f2 -d: | sed 's/>//' | sort | uniq > taxa.list 
+# create a cmds file (remove any existing protein fasta files)
+conda activate $CONDA_NAME
+echo  "rm $WORKDIR/$JOB_NAME/protein_align/*.proteins.fa" > arrange_prots_by_taxa.cmds
+parallel --dry-run --rpl "{clean_taxa} s:_N/A::g" --rpl "{gene} s:.+/(.+?)\.mafft.fasta:\1:" "seqkit grep -n -r -p \"{2}\" {1} | sed -r '/^>/s/>.+/>{1 gene}_{2 clean_taxa}/; /^>/! s/-//g' >> $WORKDIR/$JOB_NAME/protein_by_taxa/{2 clean_taxa}.proteins.fa" ::: $(find $WORKDIR/$JOB_NAME/protein_align/*.mafft.fasta) ::: $(cat $WORKDIR/$JOB_NAME/protein_align/taxa.list) >> arrange_prots_by_taxa.cmds
 
-bash arrange_prots_by_taxa.cmds
-# concatenate all the prots for each taxa
+bash arrange_prots_by_taxa.cmds 2>&1 > arrange_prots_by_taxa.log
 
+find $WORKDIR/$JOB_NAME/protein_by_taxa -name *.proteins.fa | parallel --dry-run "fasta-o-matic -f {} -o fixed_prots -q" > fix_prots.cmds
+bash fix_prots.cmds 2>&1 > fix_prots.log  
 
-
-# seqkit replace -p "(.)" -r "{fbne}_\$1"
-
-grep ">" rps16.mafft.fasta
 
 ```
 
@@ -1564,7 +1564,7 @@ datasets download genome accession PRJNA1051017 --include genome,rna,protein,cds
 unzip Ascetosporea_genomes.zip
 
 # setup analysis folder and link input files to it
-JOB_NAME="rhizaria-orthofinder"
+JOB_NAME="Ascetosporea-orthofinder-trans"
 mkdir -p $WORKDIR/$JOB_NAME/input_transcripts && cd $WORKDIR/$JOB_NAME
 find $WORKDIR/PRJNA1051017 -name "GCA_*genomic.fna" | parallel --dry-run --rpl "{target} s:.+/GCA_.+\.1_UU_(.+)_1_genomic.fna:\1:" "ln -s {//}/cds_from_genomic.fna $WORKDIR/$JOB_NAME/input_transcripts/{target}.cds.fa"
 # link Msyd cds file
@@ -1613,7 +1613,7 @@ datasets download genome accession PRJNA1051017 --include genome,rna,protein,cds
 unzip Ascetosporea_genomes.zip
 
 # setup analysis folder and link input files to it
-JOB_NAME="rhizaria-orthofinder"
+JOB_NAME="Ascetosporea-orthofinder"
 mkdir -p $WORKDIR/$JOB_NAME/input_proteins && cd $WORKDIR/$JOB_NAME
 find $WORKDIR/PRJNA1051017 -name "GCA_*genomic.fna" | parallel --dry-run --rpl "{target} s:.+/GCA_.+\.1_UU_(.+)_1_genomic.fna:\1:" "ln -s {//}/protein.faa $WORKDIR/$JOB_NAME/input_proteins/{target}.proteins.faa"
 # link Msyd cds file
@@ -1623,7 +1623,7 @@ ln -s $(find /scratch/project/adna/Oyster_QX_Disease/QX_genome_annotation/fun/up
 NCPUS=16
 MEM=72
 WALLTIME="20:00:00"
-JOB_NAME="rhizaria-orthofinder-prots"
+JOB_NAME="Ascetosporea-orthofinder-prots"
 # create Slurm script
 echo '#!/bin/bash --login
 #SBATCH --nodes=1
@@ -1645,7 +1645,61 @@ orthofinder -p /scratch/project/adna/tmp -t \$SLURM_CPUS_PER_TASK -f input_prote
 # submit to the cluster
 sbatch $JOB_NAME.slurm
 
+# archive folders with lots of files and remove the folders
+echo "Orthogroup_Sequences MultipleSequenceAlignments Single_Copy_Orthologue_Sequences" | parallel --dry-run "tar czfv /scratch/project/adna/Oyster_QX_Disease/Comparative_Genomics/rhizaria-orthofinder/input_proteins/OrthoFinder/Results_Jan17/{}.tar.gz /scratch/project/adna/Oyster_QX_Disease/Comparative_Genomics/rhizaria-orthofinder/input_proteins/OrthoFinder/Results_Jan17/{} && rm /scratch/project/adna/Oyster_QX_Disease/Comparative_Genomics/rhizaria-orthofinder/input_proteins/OrthoFinder/Results_Jan17/{}"
+
+tar czf $WORKDIR/$JOB_NAME/${JOB_NAME}_Results_Jan17.tar.gz $WORKDIR/$JOB_NAME/input_proteins/OrthoFinder/Results_Jan17  
+# run OrthoFinder on all the rhizaria proteins (from the comparative phylogeny analysis)
+# link Msyd cds file
+
+NCPUS=16
+MEM=72
+WALLTIME="10:00:00"
+JOB_NAME="rhizaria-orthofinder-prots"
+mkdir -p $WORKDIR/$JOB_NAME/input_proteins
+cd $WORKDIR/$JOB_NAME
+ln -s $(find /scratch/project/adna/Oyster_QX_Disease/QX_genome_annotation/fun/update_results/ -name *.proteins.fa) $WORKDIR/$JOB_NAME/input_proteins/MSyd.proteins.faa
+
+# find $WORKDIR/rhizaria-phylo/protein_align -name *.proteins.fa | parallel "sed '/[A-Z]/s/X//g' {} > $WORKDIR/$JOB_NAME/input_proteins/{/.}.faa"
+ln -sf $WORKDIR/rhizaria-phylo/protein_by_taxa/fixed_prots/*.fasta ./input_proteins/
+
+# create Slurm script
+echo '#!/bin/bash --login
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --output=%x.%j.log'"
+#SBATCH --job-name=$JOB_NAME
+#SBATCH --cpus-per-task=$NCPUS
+#SBATCH --mem=${MEM}G
+#SBATCH --time=$WALLTIME
+#SBATCH --account=a_agri_genomics
+#SBATCH --partition=general
+
+source ~/.bashrc
+conda activate $CONDA_NAME
+set -Eeo pipefail
+cd \$SLURM_SUBMIT_DIR
+# OrthoFinder
+orthofinder -p /scratch/project/adna/tmp -t \$SLURM_CPUS_PER_TASK -f input_proteins" >  $JOB_NAME.slurm
+# submit to the cluster
+sbatch $JOB_NAME.slurm
+
+# archive folders with lots of files and remove the folders
+cd $WORKDIR/$JOB_NAME/input_proteins/OrthoFinder/Results_Jan23/ 
+
+printf "nMultipleSequenceAlignments\nSingle_Copy_Orthologue_Sequences\nWorkingDirectory" | parallel "tar czf $WORKDIR/$JOB_NAME/input_proteins/OrthoFinder/Results_Jan23/{}.tar.gz $WORKDIR/$JOB_NAME/input_proteins/OrthoFinder/Results_Jan23/{} "
+
+printf "nMultipleSequenceAlignments\nSingle_Copy_Orthologue_Sequences\nWorkingDirectory" | parallel "rm -rf $WORKDIR/$JOB_NAME/input_proteins/OrthoFinder/Results_Jan23/{}"
+
+tar czf $WORKDIR/$JOB_NAME/${JOB_NAME}_Results_Jan23.tar.gz $WORKDIR/$JOB_NAME/input_proteins/OrthoFinder/Results_Jan23 
+
+rclone copy -P --include "**/*_Results*.tar.gz" $WORKDIR/$JOB_NAME Niki_QX:General/Niki_Nenadic/Niki_PhD/SRO_QX_genomic_data/Comparative_Genomics/$JOB_NAME
+
+
 ```
+
+Look at the shared orthologues between _M. sydneyi_ and _M. pararafringens_ and find which contigs harbour them (as further evidence that they are indeed _Marteilia_ sequences). Use the comparison with the full Rhizaria dataset to infer phylogeny.
+
 
 ### stLFR Sequencing and Assembly
 
