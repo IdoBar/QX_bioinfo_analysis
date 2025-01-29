@@ -7,6 +7,7 @@ output:
     bookdown::html_document2:
       includes:
        in_header: style/header.html
+       after_body: style/external-links-js.html
       df_print: paged
       theme: 
         version: 5
