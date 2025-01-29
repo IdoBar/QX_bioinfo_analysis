@@ -8,7 +8,10 @@ output:
       includes:
        in_header: style/header.html
       df_print: paged
-      theme: united
+      theme: 
+        version: 5
+        bootswatch: simplex #sandstone #zephyr # yeti # united
+        # primary: "#6CC3D4"
       highlight: pygments
       css: "style/style.css"
       toc: true
