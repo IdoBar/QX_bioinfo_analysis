@@ -7,9 +7,13 @@ output:
     bookdown::html_document2:
       includes:
         in_header: style/header.html
+        in_footer: style/external-links-js.html
       df_print: paged
-      theme: united
-      highlight: pygments
+      theme: 
+        version: 5
+        bootswatch: simplex #sandstone #zephyr # yeti # united
+        # primary: "#6CC3D4"
+      highlight: tango
       css: "style/style.css"
       toc: true
       toc_float: true
