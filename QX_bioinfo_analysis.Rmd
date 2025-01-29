@@ -757,7 +757,7 @@ sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=
 
 ```
 
-Expression-based clustering of transcripts was performed with [RapClust](https://github.com/COMBINE-lab/RapClust){target="_blank"} [@srivastavaAccurateFastLightweight2016a]. 
+Expression-based clustering of transcripts was performed with [RapClust](https://github.com/COMBINE-lab/RapClust){target="__blank"} [@srivastavaAccurateFastLightweight2016a]. 
 
 ```{bash rapclust}
 CONDA_NAME=genomics
@@ -791,7 +791,7 @@ WORKDIR=/home/ibar/adna/Oyster_QX_Disease
 rclone copy -P -L --exclude "**work/*" --exclude "**nextflow/*" --exclude "**.nextflow*" $WORKDIR Niki_QX:General/Niki_Nenadic/Niki_PhD/SRO_QX_genomic_data
 ```
 
-Then repeat with these flags to copy html files (a [known SharePoint-specific issue](https://rclone.org/onedrive/#unexpected-file-size-hash-differences-on-sharepoint){target="_blank"})
+Then repeat with these flags to copy html files (a [known SharePoint-specific issue](https://rclone.org/onedrive/#unexpected-file-size-hash-differences-on-sharepoint){target="__blank"})
 ```{bash rclone-copy2}
 rclone copy -P -L --ignore-checksum --ignore-size --include "**/*.html" $WORKDIR Niki_QX:General/Niki_Nenadic/Niki_PhD/SRO_QX_genomic_data
 ```
@@ -799,9 +799,9 @@ rclone copy -P -L --ignore-checksum --ignore-size --include "**/*.html" $WORKDIR
 
 ## General information
 
-This document was last updated at `r Sys.time()` using R Markdown (built with `r R.version.string`). The source code for this webpage can be found at <https://github.com/IdoBar/QX_bioinfo_analysis>.  
+This document was last updated at `r Sys.time()` using R Markdown (built with `r R.version.string`). The source code for this webpage can be found at <https://github.com/IdoBar/QX_bioinfo_analysis> (or via the GitHub logo at the top right corner of this page).    
 
-Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. It is especially powerful at authoring documents and reports which include code and can execute code and use the results in the output. For more details on using R Markdown see <http://rmarkdown.rstudio.com> and [Rmarkdown cheatsheet](https://www.rstudio.com/wp-content/uploads/2016/03/rmarkdown-cheatsheet-2.0.pdf).
+Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. It is especially powerful at authoring documents and reports which include code and can execute code and use the results in the output. For more details on using R Markdown see <http://rmarkdown.rstudio.com>, [R Markdown: The Definitive Guide](https://bookdown.org/yihui/rmarkdown/) and [Rmarkdown cheatsheet](https://rstudio.github.io/cheatsheets/html/rmarkdown.html).
 
 ------------------------------------------------------------------------
 
