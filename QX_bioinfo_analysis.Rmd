@@ -1885,7 +1885,7 @@ rclone copy -P -L --exclude "**work/*" --exclude "**nextflow/*" --exclude "**.ne
 
 This document was last updated at `r Sys.time()` using R Markdown (built with `r R.version.string`). The source code for this website can be found on <https://github.com/IdoBar/QX_bioinfo_analysis/tree/genome>.
 
-Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. It is especially powerful at authoring documents and reports which include code and can execute code and use the results in the output. For more details on using R Markdown see <http://rmarkdown.rstudio.com> and [Rmarkdown cheatsheet](https://www.rstudio.com/wp-content/uploads/2016/03/rmarkdown-cheatsheet-2.0.pdf).
+Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. It is especially powerful at authoring documents and reports which include code and can execute code and use the results in the output. For more details on using R Markdown see <http://rmarkdown.rstudio.com>, [R Markdown: The Definitive Guide](https://bookdown.org/yihui/rmarkdown/) and [Rmarkdown cheatsheet](https://rstudio.github.io/cheatsheets/html/rmarkdown.html).
 
 ------------------------------------------------------------------------
 
