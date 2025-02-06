@@ -73,7 +73,7 @@ pacman::p_load(char = basename(fav_packages))
 #### RNA extraction and sequencing
 RNA was extracted from the digestive gland of 3 healthy Sydney Rock Oysters (SRO, _Saccostrea glomerata_) and 3 SRO infected with QX disease (as confirmed by PCR assay on DNA extracted from each tissue) using the Trizol method. The RNA was sent for Illumina paired-end sequencing, generating 150bp reads (Macrogen, Korea). 
 
-The reads were downloaded to the Griffith University High Performance Computing (HPC) cluster (Gowonda) for bioinformatics processing and analyses, following the guidelines by Harvard Informatics (see [link](https://github.com/harvardinformatics/TranscriptomeAssemblyTools)) . 
+The reads were downloaded to the Griffith University High Performance Computing (HPC) cluster *Gowonda* for bioinformatics processing and analyses, following the guidelines by Harvard Informatics (see [link](https://github.com/harvardinformatics/TranscriptomeAssemblyTools)) . 
 These included error-correction with Rcorrect v1.5.0 [@songRcorrectorEfficientAccurate2015a] of the reads from each set (healthy SRO and QX-infected SRO) and removal of "unfixable" reads.
 
 ```{bash prep-rnaseq-reads}
@@ -575,7 +575,7 @@ IPRO_DATA=interproscan-data-${IPSCAN_VERSION}.tar.gz
 DATA_URL="https://ftp.ebi.ac.uk/pub/software/unix/iprscan/5/${IPSCAN_VERSION}/alt/${IPRO_DATA}"
 aria2c -x 6 -c $DATA_URL && \
  aria2c -c $DATA_URL.md5 && \
- md5sum -c ${IPRO_DATA}.md5 && pigz -dc $IPRO_DATA | tar xf -
+ md5sum -c ${IPRO_DATA}.md5 && pigz -cd $IPRO_DATA | tar xf -
 # download the interproscan container
 apptainer pull docker://index.docker.io/interpro/interproscan:${IPSCAN_VERSION} --dir $NXF_APPTAINER_CACHEDIR
 # create a link in SINGULARITY_CACHEDIR
@@ -1704,11 +1704,35 @@ rclone copy -P --include "**/*_Results*.tar.gz" $WORKDIR/$JOB_NAME Niki_QX:Gener
 
 Look at the shared orthologues between _M. sydneyi_ and _M. pararafringens_ and find which contigs harbour them (as further evidence that they are indeed _Marteilia_ sequences). Use the comparison with the full Rhizaria dataset to infer phylogeny.
 
+The Ascetosporean orthologs identified by OrthoFinder were further annotated using InterProScan [@jonesInterProScanGenomescaleProtein2014; @mitchellInterPro2019Improving2019] (see setup and installation details in https://idobar.github.io/QX_bioinfo_analysis). The GO terms were extracted from the InterPro output for analysing the biological processes and molecular functions shared and unique between the species.
+
+```{bash fun-annotate-orthologs}
+CONDA_NAME="base"
+# setup working directory
+WORKDIR="/scratch/project/adna/Oyster_QX_Disease/Comparative_Genomics/Ascetosporea-orthofinder-prots"
+cd $WORKDIR
+
+# annotate proteins with IPscan
+IPSCAN_VERSION=5.66-98.0
+JOBNAME="Asceto_prots_ipscan"
+mkdir -p $WORKDIR/$JOBNAME
+NCPUS=16
+MEM=128
+WALLTIME="10:00:00"
+# prepare the commands (don't forget to remove the asterisk at the end of the proteins!)
+find $WORKDIR/input_proteins -maxdepth 1 -name "*.proteins.faa" | parallel --dry-run "sed 's/[*]//g' {} > \$TMPDIR/{/} ; apptainer exec -B /scratch/project/adna -B /home/ibar/scratch/tools -B $WORKDIR/$JOBNAME:/output -B \$TMPDIR:/temp $NXF_SINGULARITY_CACHEDIR/interproscan_${IPSCAN_VERSION}.sif /opt/interproscan/interproscan.sh -i /temp/{/} -d /output -dra -pa -dp -goterms -f TSV -f XML -T /scratch/project/adna/tmp -cpu \$SLURM_CPUS_PER_TASK && gawk '\$4~/PANTHER/' $WORKDIR/$JOBNAME/{/}.tsv > $WORKDIR/$JOBNAME/{/.}.panther.tsv" > $JOBNAME.cmds
+
+# submit the job array to the cluster
+sbatch -a 1-$(cat $JOBNAME.cmds | wc -l)%10 --job-name=$JOBNAME --cpus-per-task=$NCPUS --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOBNAME.cmds,CONDA_NAME=base  ${HOME}/bin/array.slurm
+```
+
 
 ### stLFR Sequencing and Assembly
 
 DNA sample from QX-infected oyster (NN_781) was sent to the State Agricultural Biotechnology Centre ([SABC](https://www.murdoch.edu.au/research/sabc)) at Murdoch University (led by Prof. Rajeev Varshney) for single tube long fragment read (stLFR) sequencing on an MGI DNBSEQ-T7 [@wangEfficientUniqueCobarcoding2019a]. See this paper for a comparison of sequencing and assembly strategies, including Nanopore and stLFR [@zhangComparisonDifferentSequencing2021]. 
-The analysis was performed on QCIF Bunya HPC (see the [documentation](https://github.com/UQ-RCC/hpc-docs)). The raw stLFR reads need to be deconvulated based on the barcodes found in the reverse (R2) reads (a *whitelist* containing these barcodes can be found in the [stLFR_barcode_split repository](https://github.com/BGI-Qingdao/stLFR_barcode_split/blob/8a22b7f152b0f18a2d3db59733368cc4352cbc58/barcode_list.txt) or downloaded from [LRTK databases](https://drive.google.com/drive/folders/1XPW2avL_LZAt5yIh9tb35jZ5GfCSj7eQ)). Several pipelines have been developed to process such reads, as detailed below.
+
+Sequencing data processing, including basecalling, QC and other analyses were performed on the University of Queensland *Bunya* high-performance computing (HPC) cluster (see [documentation](https://github.com/UQ-RCC/hpc-docs/tree/main)), made available through The [Queensland Cyber Infrastructure Foundation](https://www.qcif.edu.au/services/high-performance-computing) (QCIF). Additional analyses were performed in [GalaxyAU](https://usegalaxy.org.au) and Griffith University *Gowonda* HPC cluster (see [documentation](https://griffith.atlassian.net/wiki/spaces/GHCD/overview?homepageId=4030474)). 
+The raw stLFR reads need to be deconvulated based on the barcodes found in the reverse (R2) reads (a *whitelist* containing these barcodes can be found in the [stLFR_barcode_split repository](https://github.com/BGI-Qingdao/stLFR_barcode_split/blob/8a22b7f152b0f18a2d3db59733368cc4352cbc58/barcode_list.txt) or downloaded from [LRTK databases](https://drive.google.com/drive/folders/1XPW2avL_LZAt5yIh9tb35jZ5GfCSj7eQ)). Several pipelines have been developed to process such reads, as detailed below.
 
 
 ##### Assembly with Supernova
