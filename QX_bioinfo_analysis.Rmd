@@ -7,7 +7,7 @@ output:
     bookdown::html_document2:
       includes:
         in_header: style/header.html
-        in_footer: style/external-links-js.html
+        after_body: style/external-links-js.html
       df_print: paged
       theme: 
         version: 5
@@ -71,7 +71,7 @@ High molecular DNA was extracted using the Monarch® HMW DNA Extraction Kit for 
 
 ### Nanopore Sequencing and Basecalling
 The DNA was prepared for long-read Nanopore sequencing by removal of contaminants (Qiagen [DNeasy PowerClean CleanUp Kit](https://www.qiagen.com/us/products/discovery-and-translational-research/dna-rna-purification/dna-purification/microbial-dna/dneasy-powerclean-cleanup-kit)) and short fragments (ONT Short Fragment Eliminator Kit, EXP-SFE001), followed by ligation of sequencing adapters using the Ligation sequencing DNA V14 (ONT SQK-LSK114) or the Rapid Barcoding kit (SQK-RBK110.96) for sequencing on an Oxford Nanopore Mk1C with a MINFLO114 flowcell (R10) or on a PromethION R9.4.1 flowcell, respectively.   
-PromethION data was first demultiplexed with Guppy, then the resulting `fast5` files were converted to `pod5` files using [pod5 package](https://pod5-file-format.readthedocs.io/en/0.2.0/docs/tools.html){target="_blank"}.  
+PromethION data was first demultiplexed with Guppy, then the resulting `fast5` files were converted to `pod5` files using [pod5 package](https://pod5-file-format.readthedocs.io/en/0.2.0/docs/tools.html).  
 
 ```{bash setup-conda}
 # download and install conda/mamba
@@ -378,30 +378,50 @@ curl -L https://ftp.ncbi.nih.gov/pub/taxonomy/new_taxdump/new_taxdump.tar.gz | t
 
 # setup working directory
 WORK_DIR=$HOME/scratch/McDougall/Niki_QX_genome/Nanopore_sequencing
-cd $WORK_DIR
+mkdir -p $WORK_DIR/blobtk_dir && cd $WORK_DIR
 QUERY="Galaxy_Flye_assembly"
 
 
 # create dataset
 echo "assembly:
   accession: GCA_001028725.1
-  alias: S_venezuelensis_HH1
+  alias: M_sydneyi_NN781
   bioproject: PRJEB530
   biosample: AMD00012916
   record_type: contig
 taxon:
   name: Martylia sydneyi" > $QUERY.yaml
 
-echo "source ~/.bashrc; cd $PWD; conda activate $CONDA_NAME; set -Eeo pipefail; blobtools create --fasta $QUERY.fasta --taxid 98371 --taxdump $TX_DB_DIR $QUERY" | qsub -l select=1:ncpus=8:mem=32gb,walltime=10:00:00 -N  # --meta $QUERY.yaml \
+echo "source ~/.bashrc; cd $PWD; conda activate $CONDA_NAME; set -Eeo pipefail; blobtools create --fasta $QUERY.fasta --taxid 98371 --taxdump $TX_DB_DIR $WORK_DIR/blobtk_dir/$QUERY" | qsub -l select=1:ncpus=8:mem=32gb,walltime=10:00:00 -N  # --meta $QUERY.yaml \
 
 # add diamond and BLAST hits
-echo "source ~/.bashrc; cd $PWD; conda activate $CONDA_NAME; set -Eeo pipefail; blobtools add --bitscore 100 --hits $QUERY.nt_tax.outfmt6 --hits $QUERY.nr_tax.outfmt6.txt --taxrule bestsumorder --taxdump $TX_DB_DIR --hits-cols 1=qseqid,14=staxids,12=bitscore,2=sseqid,7=qstart,8=qend,11=evalue $QUERY" | qsub -l select=1:ncpus=8:mem=32gb,walltime=10:00:00 -N add_blob_hits 
-    
+echo "source ~/.bashrc; cd $PWD; conda activate $CONDA_NAME; set -Eeo pipefail; blobtools add --bitscore 100 --hits $QUERY.nt_tax.outfmt6 --hits $QUERY.nr_tax.outfmt6.txt --taxrule bestsumorder --taxdump $TX_DB_DIR --hits-cols 1=qseqid,14=staxids,12=bitscore,2=sseqid,7=qstart,8=qend,11=evalue $WORK_DIR/blobtk_dir/$QUERY" | qsub -l select=1:ncpus=8:mem=32gb,walltime=10:00:00 -N add_blob_hits 
+# add coverage 
+echo "source ~/.bashrc; cd $PWD; conda activate $CONDA_NAME; set -Eeo pipefail; blobtools add --cov combined_QX1_QX2_on_Galaxy_Flye_assembly_minimap2.bam $WORK_DIR/blobtk_dir/$QUERY" > blobtk_add_cov.sh
+qsub -l select=1:ncpus=8:mem=32gb,walltime=10:00:00 -N blobtk_add_cov blobtk_add_cov.sh 
+
+# add BUSCo results
+echo "source ~/.bashrc; cd $PWD; conda activate $CONDA_NAME; set -Eeo pipefail; blobtools add --busco $QUERY_Busco_full_table.tabular $WORK_DIR/blobtk_dir/$QUERY" > blobtk_add_busco.sh
+qsub -l select=1:ncpus=8:mem=32gb,walltime=1:00:00 -N blobtk_add_busco blobtk_add_busco.sh 
+# or with Docker
+#docker run -d --rm --name btk \
+ #          -v ./blobtk_dirs:/blobtoolkit/datasets \
+  #         genomehubs/blobtoolkit:latest blobtools add --busco $QUERY_Busco_full_table.tabular $QUERY
+
+# compress the library
+tar czf $WORK_DIR/blobtk_$QUERY.tgz $WORK_DIR/blobtk_dir/$QUERY
 # open an interactive viewer
 qsub -I -X -l select=1:ncpus=8:mem=32gb,walltime=10:00:00 -N view_blobtk 
 conda activate blobtk
 blobtools view --interactive $QUERY
 blobtools host 
+
+# or visualise using the Docker container
+docker run -d --rm --name btk \
+           -v ./blobtk_dirs:/blobtoolkit/datasets \
+           -p 8000:8000 -p 8080:8080 \
+           -e VIEWER=true \
+           genomehubs/blobtoolkit:latest
 
 ```
 
