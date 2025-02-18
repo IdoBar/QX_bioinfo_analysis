@@ -4,21 +4,21 @@ author: "Niki Nenadic and Ido Bar"
 date: "`r format(Sys.Date(), '%d %B %Y')`"
 always_allow_html: yes
 output: 
-    rmdformats::readthedown:
- #   bookdown::html_document2:
+ #   rmdformats::readthedown:
+   bookdown::html_document2:
       use_bookdown: TRUE
       includes:
        in_header: style/header.html
        after_body: style/external-links-js.html
       df_print: paged
-      # theme: 
-      #   version: 5
-      #   bootswatch: simplex #sandstone #zephyr # yeti # united
+      theme:
+        version: 5
+        bootswatch: simplex #sandstone #zephyr # yeti # united
         # primary: "#6CC3D4"
       highlight: pygments
       css: "style/style.css"
-      # toc: true
-      # toc_float: true
+      toc: true
+      toc_float: true
       toc_depth: 4
   #    highlight: pygments
       number_sections: false
