@@ -4,23 +4,25 @@ author: "Niki Nenadic and Ido Bar"
 date: "`r format(Sys.Date(), '%d %B %Y')`"
 always_allow_html: yes
 output: 
-    bookdown::html_document2:
+    rmdformats::readthedown:
+ #   bookdown::html_document2:
+      use_bookdown: TRUE
       includes:
         in_header: style/header.html
         after_body: style/external-links-js.html
       df_print: paged
-      theme: 
-        version: 5
-        bootswatch: simplex #sandstone #zephyr # yeti # united
+      # theme: 
+      #   version: 5
+      #   bootswatch: simplex #sandstone #zephyr # yeti # united
         # primary: "#6CC3D4"
       highlight: tango
       css: "style/style.css"
-      toc: true
-      toc_float: true
-      toc_depth: 4
+      # toc: true
+      # toc_float: true
+      # toc_depth: 4
   #    highlight: pygments
       number_sections: false
-      code_folding: hide
+      code_folding: show
 #      keep_md: true
 #bibliography: style/comparative_genomics.bib
 bibliography: ["style/QX_references.bib","style/comparative_genomics.bib", 'style/oyster_genomes.bib', 'style/pseudo_counts.bib', 'style/stLFR_assembers.bib', 'style/transcriptome_assembly_evaluation.bib', 'style/Metagenomes_assembly_papers.bib', 'style/NGS_QC.bib', 'style/RNAseq_tools.bib'] 
@@ -29,11 +31,18 @@ csl: style/springer-basic-improved-author-date-with-italic-et-al-period.csl
 
 ```{r setup, include=FALSE}
 devtools::source_gist("7f63547158ecdbacf31b54a58af0d1cc", filename = "util.R")
-knitr::opts_chunk$set(list(echo = TRUE, eval=FALSE, message=FALSE))
-fav_packages <- c('tidyverse', 'rentrez', 'taxonomizr')
+knitr::opts_chunk$set(list(echo = TRUE, eval=FALSE, message=FALSE, class.source='klippy'))
+fav_packages <- c('tidyverse', 'rentrez', 'taxonomizr', "juba/rmdformats", "rlesur/klippy")
 pak::pak(fav_packages)
 
-pacman::p_load(char = basename(fav_packages))
+pacman::p_load(char = basename(fav_packages), update=FALSE, install=FALSE)
+
+# add copy to clipboard icon
+klippy::klippy(c('r', 'bash'), position = c('top', 'right'))
+```
+
+```{r klippy, echo=FALSE, include=TRUE}
+klippy::klippy()
 ```
 
 ## Aims
