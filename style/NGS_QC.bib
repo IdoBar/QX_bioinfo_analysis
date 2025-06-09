@@ -60,3 +60,59 @@
   abstract = {Background Contamination is a well-known but often neglected problem in molecular biology. Here, we investigated the prevalence of cross-contamination among 446 samples from 116 distinct species of animals, which were processed in the same laboratory and subjected to subcontracted transcriptome sequencing. Results Using cytochrome oxidase 1 as a barcode, we identified a minimum of 782 events of between-species contamination, with approximately 80\% of our samples being affected. An analysis of laboratory metadata revealed a strong effect of the sequencing center: nearly all the detected events of between-species contamination involved species that were sent the same day to the same company. We introduce new methods to address the amount of within-species, between-individual contamination, and to correct for this problem when calling genotypes from base read counts. Conclusions We report evidence for pervasive within-species contamination in this data set, and show that classical population genomic statistics, such as synonymous diversity, the ratio of non-synonymous to synonymous diversity, inbreeding coefficient FIT, and Tajima's D, are sensitive to this problem to various extents. Control analyses suggest that our published results are probably robust to the problem of contamination. Recommendations on how to prevent or avoid contamination in large-scale population genomics/molecular ecology are provided based on this analysis. Electronic supplementary material The online version of this article (doi:10.1186/s12915-017-0366-6) contains supplementary material, which is available to authorized users.},
   pmcid = {PMC5370491}
 }
+
+@article{gurevichQUASTQualityAssessment2013,
+  title = {{{QUAST}}: Quality Assessment Tool for Genome Assemblies},
+  shorttitle = {Quast},
+  author = {Gurevich, Alexey and Saveliev, Vladislav and Vyahhi, Nikolay and Tesler, Glenn},
+  date = {2013-04-15},
+  journaltitle = {Bioinformatics},
+  shortjournal = {Bioinformatics},
+  volume = {29},
+  number = {8},
+  pages = {1072--1075},
+  issn = {1367-4803},
+  doi = {10.1093/bioinformatics/btt086},
+  url = {https://doi.org/10.1093/bioinformatics/btt086},
+  urldate = {2025-03-24},
+  abstract = {Summary: Limitations of genome sequencing techniques have led to dozens of assembly algorithms, none of which is perfect. A number of methods for comparing assemblers have been developed, but none is yet a recognized benchmark. Further, most existing methods for comparing assemblies are only applicable to new assemblies of finished genomes; the problem of evaluating assemblies of previously unsequenced species has not been adequately considered. Here, we present QUAST---a quality assessment tool for evaluating and comparing genome assemblies. This tool improves on leading assembly comparison software with new ideas and quality metrics. QUAST can evaluate assemblies both with a reference genome, as well as without a reference. QUAST produces many reports, summary tables and plots to help scientists in their research and in their publications. In this study, we used QUAST to compare several genome assemblers on three datasets. QUAST tables and plots for all of them are available in the Supplementary Material, and interactive versions of these reports are on the QUAST website.Availability: ~http://bioinf.spbau.ru/quastContact: ~gurevich@bioinf.spbau.ruSupplementary information: ~Supplementary data are available at Bioinformatics online.},
+  langid = {english}
+}
+
+@article{mikheenkoIcarusVisualizerNovo2016,
+  title = {Icarus: Visualizer for de Novo Assembly Evaluation},
+  shorttitle = {Icarus},
+  author = {Mikheenko, Alla and Valin, Gleb and Prjibelski, Andrey and Saveliev, Vladislav and Gurevich, Alexey},
+  date = {2016-11-01},
+  journaltitle = {Bioinformatics (oxford, England)},
+  shortjournal = {Bioinform. (oxf. Engl.)},
+  volume = {32},
+  number = {21},
+  eprint = {27378299},
+  eprinttype = {pmid},
+  pages = {3321--3323},
+  issn = {1367-4811},
+  doi = {10.1093/bioinformatics/btw379},
+  abstract = {: Data visualization plays an increasingly important role in NGS data analysis. With advances in both sequencing and computational technologies, it has become a new bottleneck in genomics studies. Indeed, evaluation of de novo genome assemblies is one of the areas that can benefit from the visualization. However, even though multiple quality assessment methods are now available, existing visualization tools are hardly suitable for this purpose. Here, we present Icarus-a novel genome visualizer for accurate assessment and analysis of genomic draft assemblies, which is based on the tool QUAST. Icarus can be used in studies where a related reference genome is available, as well as for non-model organisms. The tool is available online and as a standalone application. AVAILABILITY AND IMPLEMENTATION: http://cab.spbu.ru/software/icarus CONTACT: aleksey.gurevich@spbu.ruSupplementary information: Supplementary data are available at Bioinformatics online.},
+  langid = {english},
+  keywords = {Genome,Genomics,Sequence Analysis DNA,Software}
+}
+
+@article{mikheenkoVersatileGenomeAssembly2018,
+  title = {Versatile Genome Assembly Evaluation with {{QUAST-LG}}},
+  author = {Mikheenko, Alla and Prjibelski, Andrey and Saveliev, Vladislav and Antipov, Dmitry and Gurevich, Alexey},
+  date = {2018-07-01},
+  journaltitle = {Bioinformatics (oxford, England)},
+  shortjournal = {Bioinform. (oxf. Engl.)},
+  volume = {34},
+  number = {13},
+  eprint = {29949969},
+  eprinttype = {pmid},
+  pages = {i142-i150},
+  issn = {1367-4811},
+  doi = {10.1093/bioinformatics/bty266},
+  abstract = {MOTIVATION: The emergence of high-throughput sequencing technologies revolutionized genomics in early 2000s. The next revolution came with the era of long-read sequencing. These technological advances along with novel computational approaches became the next step towards the automatic pipelines capable to assemble nearly complete mammalian-size genomes. RESULTS: In this manuscript, we demonstrate performance of the state-of-the-art genome assembly software on six eukaryotic datasets sequenced using different technologies. To evaluate the results, we developed QUAST-LG-a tool that compares large genomic de novo assemblies against reference sequences and computes relevant quality metrics. Since genomes generally cannot be reconstructed completely due to complex repeat patterns and low coverage regions, we introduce a concept of upper bound assembly for a given genome and set of reads, and compute theoretical limits on assembly correctness and completeness. Using QUAST-LG, we show how close the assemblies are to the theoretical optimum, and how far this optimum is from the finished reference. AVAILABILITY AND IMPLEMENTATION: http://cab.spbu.ru/software/quast-lg. SUPPLEMENTARY INFORMATION: Supplementary data are available at Bioinformatics online.},
+  langid = {english},
+  pmcid = {PMC6022658},
+  keywords = {Animals,Genomics,High-Throughput Nucleotide Sequencing,Humans,Saccharomyces cerevisiae,Sequence Analysis DNA,Software}
+}

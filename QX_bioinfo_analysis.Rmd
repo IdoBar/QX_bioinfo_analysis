@@ -25,25 +25,23 @@ output:
       code_folding: show
 #      keep_md: true
 #bibliography: style/comparative_genomics.bib
-bibliography: ["style/QX_references.bib","style/comparative_genomics.bib", 'style/oyster_genomes.bib', 'style/pseudo_counts.bib', 'style/stLFR_assembers.bib', 'style/transcriptome_assembly_evaluation.bib', 'style/Metagenomes_assembly_papers.bib', 'style/NGS_QC.bib', 'style/RNAseq_tools.bib'] 
+bibliography: ["style/QX_references.bib","style/comparative_genomics.bib", 'style/oyster_genomes.bib', 'style/pseudo_counts.bib', 'style/stLFR_assemblers.bib', 'style/transcriptome_assembly_evaluation.bib', 'style/Metagenomes_assembly_papers.bib', 'style/NGS_QC.bib', 'style/RNAseq_tools.bib'] 
 csl: style/springer-basic-improved-author-date-with-italic-et-al-period.csl
 ---
 
 ```{r setup, include=FALSE}
 devtools::source_gist("7f63547158ecdbacf31b54a58af0d1cc", filename = "util.R")
-knitr::opts_chunk$set(list(echo = TRUE, eval=FALSE, message=FALSE, class.source='klippy'))
-fav_packages <- c('tidyverse', 'rentrez', 'taxonomizr', "juba/rmdformats", "rlesur/klippy")
-pak::pak(fav_packages)
+knitr::opts_chunk$set(list(echo = TRUE, eval=FALSE, message=FALSE))
+fav_packages <- c('tidyverse', 'rentrez', 'taxonomizr', 
+                  "juba/rmdformats")
+# pak::pak(fav_packages)
 
 pacman::p_load(char = basename(fav_packages), update=FALSE, install=FALSE)
 
 # add copy to clipboard icon
-klippy::klippy(c('r', 'bash'), position = c('top', 'right'))
+# klippy::klippy(c('r', 'bash'), position = c('top', 'right'))
 ```
 
-```{r klippy, echo=FALSE, include=TRUE}
-klippy::klippy()
-```
 
 ## Aims
 
@@ -96,9 +94,9 @@ conda config --set auto_stack 1
 # install extra packages to the base environment
 conda install -n base libgcc gnutls libuuid readline cmake git tmux libgfortran parallel mamba gawk pigz rename genozip autoconf sshpass pbgzip rclone gh-cli
 # setup conda environment for Nanopore data analysis and processing
-mamba create -n ont seqkit slow5tools samtools rclone parallel pip numpy pycoqc chopper nanoplot pbgzip
+mamba create -n ont seqkit slow5tools samtools rclone parallel pip numpy pycoqc chopper nanoplot pbgzip hifiasm hifiasm_meta
 conda activate ont
-pip install pod5 pyslow5
+pip install pod5 pyslow5 duplex_tools
 ```
 
 Basecalling of simplex and duplex reads from the Nanopore sequencing data was performed with [dorado](https://github.com/nanoporetech/dorado).  
@@ -375,7 +373,7 @@ An alternative approach is to use 'SprayNPray', as detailed in [@garberSprayNPra
 ```{bash blobtoolkit}
 # install blobtoolkit
 CONDA_NAME=blobtk
-mamba create -n $CONDA_NAME firefox geckodriver
+mamba create -n $CONDA_NAME firefox geckodriver tqdm==4.64.1
 conda activate $CONDA_NAME
 pip install "blobtoolkit[full]"
 
@@ -387,38 +385,56 @@ curl -L https://ftp.ncbi.nih.gov/pub/taxonomy/new_taxdump/new_taxdump.tar.gz | t
 
 # setup working directory
 WORK_DIR=$HOME/scratch/McDougall/Niki_QX_genome/Nanopore_sequencing
-mkdir -p $WORK_DIR/blobtk_dir && cd $WORK_DIR
+mkdir -p $WORK_DIR/blobtk_dirs && cd $WORK_DIR
 QUERY="Galaxy_Flye_assembly"
 
 
 # create dataset
 echo "assembly:
-  accession: GCA_001028725.1
+  accession: NA
   alias: M_sydneyi_NN781
-  bioproject: PRJEB530
-  biosample: AMD00012916
-  record_type: contig
+  bioproject: NA
+  biosample: NA
+  record_type: scaffold
 taxon:
-  name: Martylia sydneyi" > $QUERY.yaml
+  name: Martylia sydneyi" > ${QUERY}.yaml
 
-echo "source ~/.bashrc; cd $PWD; conda activate $CONDA_NAME; set -Eeo pipefail; blobtools create --fasta $QUERY.fasta --taxid 98371 --taxdump $TX_DB_DIR $WORK_DIR/blobtk_dir/$QUERY" | qsub -l select=1:ncpus=8:mem=32gb,walltime=10:00:00 -N  # --meta $QUERY.yaml \
+echo "source ~/.bashrc; cd $PWD; conda activate $CONDA_NAME; set -Eeo pipefail; blobtools create --fasta ${QUERY}.fasta --taxid 98371 --taxdump $TX_DB_DIR $WORK_DIR/blobtk_dirs/${QUERY}" | qsub -l select=1:ncpus=8:mem=32gb,walltime=10:00:00 -N  # --meta $QUERY.yaml \
 
 # add diamond and BLAST hits
-echo "source ~/.bashrc; cd $PWD; conda activate $CONDA_NAME; set -Eeo pipefail; blobtools add --bitscore 100 --hits $QUERY.nt_tax.outfmt6 --hits $QUERY.nr_tax.outfmt6.txt --taxrule bestsumorder --taxdump $TX_DB_DIR --hits-cols 1=qseqid,14=staxids,12=bitscore,2=sseqid,7=qstart,8=qend,11=evalue $WORK_DIR/blobtk_dir/$QUERY" | qsub -l select=1:ncpus=8:mem=32gb,walltime=10:00:00 -N add_blob_hits 
+echo "source ~/.bashrc; cd $PWD; conda activate $CONDA_NAME; set -Eeo pipefail; blobtools add --bitscore 100 --hits ${QUERY}.nt_tax.outfmt6 --hits ${QUERY}.nr_tax.outfmt6.txt --taxrule bestsumorder --taxdump $TX_DB_DIR --hits-cols 1=qseqid,14=staxids,12=bitscore,2=sseqid,7=qstart,8=qend,11=evalue $WORK_DIR/blobtk_dirs/$QUERY" | qsub -l select=1:ncpus=8:mem=32gb,walltime=10:00:00 -N add_blob_hits 
 # add coverage 
-echo "source ~/.bashrc; cd $PWD; conda activate $CONDA_NAME; set -Eeo pipefail; blobtools add --cov combined_QX1_QX2_on_Galaxy_Flye_assembly_minimap2.bam $WORK_DIR/blobtk_dir/$QUERY" > blobtk_add_cov.sh
+echo "source ~/.bashrc; cd $PWD; conda activate $CONDA_NAME; set -Eeo pipefail; blobtools add --cov combined_QX1_QX2_on_${QUERY}_minimap2.bam $WORK_DIR/blobtk_dirs/$QUERY" > blobtk_add_cov.sh
 qsub -l select=1:ncpus=8:mem=32gb,walltime=10:00:00 -N blobtk_add_cov blobtk_add_cov.sh 
 
 # add BUSCo results
-echo "source ~/.bashrc; cd $PWD; conda activate $CONDA_NAME; set -Eeo pipefail; blobtools add --busco $QUERY_Busco_full_table.tabular $WORK_DIR/blobtk_dir/$QUERY" > blobtk_add_busco.sh
+echo "source ~/.bashrc; cd $PWD; conda activate $CONDA_NAME; set -Eeo pipefail; blobtools add --busco ${QUERY}_Busco_full_table.tabular $WORK_DIR/blobtk_dirs/$QUERY" > blobtk_add_busco.sh
 qsub -l select=1:ncpus=8:mem=32gb,walltime=1:00:00 -N blobtk_add_busco blobtk_add_busco.sh 
+
+# second attempt (run all commands in one go)
+echo "assembly:
+  accession: NA
+  alias: M_sydneyi_NN781
+  bioproject: NA
+  biosample: NA
+  record_type: scaffold
+taxon:
+  name: Martylia sydneyi" > ${QUERY}.yaml
+
+echo "source ~/.bashrc; cd $PWD; conda activate $CONDA_NAME; set -Eeo pipefail; blobtools create --fasta ${QUERY}.fasta --taxid 98371 --taxdump $TX_DB_DIR $WORK_DIR/blobtk_dirs/${QUERY} 
+blobtools add --bitscore 100 --hits ${QUERY}.nt_tax.outfmt6 --hits ${QUERY}.nr_tax.outfmt6.txt --taxrule bestsumorder --taxdump $TX_DB_DIR --hits-cols 1=qseqid,14=staxids,12=bitscore,2=sseqid,7=qstart,8=qend,11=evalue $WORK_DIR/blobtk_dirs/${QUERY} 
+blobtools add --cov combined_QX1_QX2_on_${QUERY}_minimap2.bam $WORK_DIR/blobtk_dirs/${QUERY} 
+blobtools add --busco ${QUERY}_Busco_full_table.tabular $WORK_DIR/blobtk_dirs/${QUERY}"  > blobtk_${QUERY}.sh 
+qsub -l select=1:ncpus=8:mem=32gb,walltime=10:00:00 -N blobtk_${QUERY} blobtk_${QUERY}2.sh # --meta $QUERY.yaml \
+
+
 # or with Docker
 #docker run -d --rm --name btk \
  #          -v ./blobtk_dirs:/blobtoolkit/datasets \
   #         genomehubs/blobtoolkit:latest blobtools add --busco $QUERY_Busco_full_table.tabular $QUERY
 
 # compress the library
-tar czf $WORK_DIR/blobtk_$QUERY.tgz $WORK_DIR/blobtk_dir/$QUERY
+tar cf $WORK_DIR/blobtk_dirs.tar blobtk_dirs
 # open an interactive viewer
 qsub -I -X -l select=1:ncpus=8:mem=32gb,walltime=10:00:00 -N view_blobtk 
 conda activate blobtk
@@ -1015,37 +1031,132 @@ tar czf $WORKDIR/$JOB_NAME/${JOB_NAME}_Results_Feb09.tar.gz $WORKDIR/$JOB_NAME/R
 
 ```
 
-TODO: Look at the shared orthologues between _M. sydneyi_ and _M. pararafringens_ and find which contigs harbour them (as further evidence that they are indeed _Marteilia_ sequences). Use the comparison with the full Rhizaria dataset to infer phylogeny.
+> TODO: Look at the shared orthologues between _M. sydneyi_ and _M. pararafringens_ and find which contigs harbour them (as further evidence that they are indeed _Marteilia_ sequences). Use the comparison with the full Rhizaria dataset to infer phylogeny.
 
 ### stLFR Sequencing and Assembly
 
-DNA sample from QX-infected oyster (NN_781) was sent to the State Agricultural Biotechnology Centre ([SABC](https://www.murdoch.edu.au/research/sabc)) at Murdoch University (led by Prof. Rajeev Varshney) for single tube long fragment read (stLFR) sequencing on an MGI DNBSEQ-T7 [@wangEfficientUniqueCobarcoding2019a]. See this paper for a comparison of sequencing and assembly strategies, including Nanopore and stLFR [@zhangComparisonDifferentSequencing2021]. 
+DNA sample from QX-infected oyster (NN_781) was sent to the WA State Agricultural Biotechnology Centre ([SABC](https://www.murdoch.edu.au/research/sabc)) at Murdoch University (led by Prof. Rajeev Varshney) for single tube long fragment read (stLFR) sequencing on an MGI DNBSEQ-T7 [@wangEfficientUniqueCobarcoding2019a] (see @zhangComparisonDifferentSequencing2021 for a comparison of sequencing and assembly strategies, including Nanopore and stLFR and @lagnel-hal-04009338 for a hybrid approach utilizing these sequencing technologies ). 
 
 Sequencing data processing, including basecalling, QC and other analyses were performed on the University of Queensland *Bunya* high-performance computing (HPC) cluster (see [documentation](https://github.com/UQ-RCC/hpc-docs/tree/main)), made available through The [Queensland Cyber Infrastructure Foundation](https://www.qcif.edu.au/services/high-performance-computing) (QCIF). Additional analyses were performed in [GalaxyAU](https://usegalaxy.org.au) and Griffith University *Gowonda* HPC cluster (see [documentation](https://griffith.atlassian.net/wiki/spaces/GHCD/overview?homepageId=4030474)). 
-The raw stLFR reads need to be deconvulated based on the barcodes found in the reverse (R2) reads (a *whitelist* containing these barcodes can be found in the [stLFR_barcode_split repository](https://github.com/BGI-Qingdao/stLFR_barcode_split/blob/8a22b7f152b0f18a2d3db59733368cc4352cbc58/barcode_list.txt) or downloaded from [LRTK databases](https://drive.google.com/drive/folders/1XPW2avL_LZAt5yIh9tb35jZ5GfCSj7eQ)). Several pipelines have been developed to process such reads, as detailed below.
+The raw stLFR reads need to be deconvulated based on the barcodes found in the last 42bp of the reverse (R2) reads (a *whitelist* containing these barcodes can be found in the [stLFR_barcode_split repository](https://github.com/BGI-Qingdao/stLFR_barcode_split/blob/8a22b7f152b0f18a2d3db59733368cc4352cbc58/barcode_list.txt) or downloaded from [LRTK databases](https://drive.google.com/drive/folders/1XPW2avL_LZAt5yIh9tb35jZ5GfCSj7eQ)). Several pipelines have been developed to process such reads, as detailed below.
 
 
-##### Assembly with Supernova
-The [stLFR2Supernova](https://github.com/BGI-Qingdao/stlfr2supernova_pipeline) (or [stLFRdenovo](https://github.com/BGI-biotools/stLFRdenovo)) pipeline processes the raw reads, converts them to the 10X Genomics format and then uses the Supernova [@visendiNovoAssemblyLinked2022] to assemble the genome. 
+#### Assembly with Supernova
+The [stLFR2Supernova](https://github.com/BGI-Qingdao/stlfr2supernova_pipeline) (or [stLFRdenovo](https://github.com/BGI-biotools/stLFRdenovo)) pipeline was used to process the raw reads, convert them to the 10X Genomics format and then assemble a draft genome using Supernova [@visendiNovoAssemblyLinked2022]. 
 
 ```{bash stlfr-supernova}
 # install stLFRdenovo pipeline and dependencies
 cd ~/etc/tools/
 wget https://github.com/BGI-biotools/stLFRdenovo/releases/download/v1.0.5/stLFRdenovo-v1.0.5.tar.gz
 tar xzf stLFRdenovo-v1.0.5.tar.gz
-WHITELIST=$(find ~/etc/tools -name "barcode_list.txt")
+# Find barcode whitelist
+WHITELIST=$(find ~/etc/tools -name "barcode_list.txt" | head -n1)
+CONDA_NAME="base"
+WORKDIR="/scratch/project/adna/Oyster_QX_Disease/stLFR_Murdoch"
+NCPUS=24
+MEM=512
+WALLTIME="50:00:00"
+JOB_NAME="SRO-stlfr-supernova"
+mkdir -p $WORKDIR/$JOB_NAME && cd $WORKDIR/$JOB_NAME
 
-
+echo "~/etc/tools/stLFRdenovo-v1.0.5/stLFRdenovo_pipeline.sh -f $WORKDIR/Oyster_781.2.R1.fq.gz $WORKDIR/Oyster_781.2.R2.fq.gz -o output -m $MEM -t $NCPUS" > $JOB_NAME.cmds
+# submit the job to the cluster
+sbatch --job-name=$JOB_NAME --cpus-per-task=$NCPUS --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOB_NAME.cmds,CONDA_NAME=$CONDA_NAME ~/bin/serial_jobs_run.slurm
+# job failed with TIMEOUT error
+# Continue just from the assembly step
+NCPUS=24
+MEM=512
+WALLTIME="100:00:00"
+JOB_NAME="SRO-stLFRdenovo"
+echo "~/etc/tools/stLFRdenovo-v1.0.5/step_2_run_assembly.sh -f output/read.1.fq.gz.clean.gz output/read.2.fq.gz.clean.gz -o output -m $MEM -t $NCPUS" > $JOB_NAME.cmds
+# submit the job to the cluster
+sbatch --job-name=$JOB_NAME --cpus-per-task=$NCPUS --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOB_NAME.cmds,CONDA_NAME=$CONDA_NAME ~/bin/serial_jobs_run.slurm
 
 ```
 
+An alternative for `supernova` is SLR-superscaffolder, which will require converting the stLFR reads to 10X Genomics format [@guoSLRsuperscaffolderNovoScaffolding2021]. 
+
+##### Gap filling
+After an initial `supernova` assembly any gaps in the initial draft assembly can be filled with the Oxford Nanopore generated reads. This can be done with a range of dedicated tools, such as [GABOLA](https://hub.docker.com/r/lsbnb/gabola) (or its successor [LOCLA](https://github.com/lsbnb/locla), see ), RagTag [@alongeAutomatedAssemblyScaffolding2022], [FGAP](https://github.com/pirovc/fgap) [@piroFGAPAutomatedGap2014], SAMBA [@ziminSAMBAToolUses2022], LR_Gapcloser [@xuLR_GapcloserTilingPathbased2019], PGcloser [@luPGcloserFastParallel2020], DENTIST [@ludwigDENTISTUsingLong2021] to name a few.
+
+A recent review by @zhaoComprehensiveEvaluationGenome2024 showed that for every dataset a different gap filler performs best (with FGAP, SAMBA and DENTIST performing best in their datatests), therefore a few approaches can be utilised and compared using an assembly QC evaluation program such as QUAST [@gurevichQUASTQualityAssessment2013].
+
+We chose to compare SAMBA (installed through [MaSuRCA](https://github.com/alekseyzimin/masurca#samba-scaffolder) Genome Assembly and Analysis Toolkit), [FGAP](https://github.com/pirovc/fgap) and [LOCLA](https://github.com/lsbnb/locla#ii-10x-genomics--pacbioont-pipeline)
+
+First we need to prepare the Nanopore data (as detailed in Section \@ref(nanopore-sequencing-and-basecalling), but using the latest [dorado](https://github.com/nanoporetech/dorado) models)
+```{bash prep-ont-data}
+CONDA_NAME="ont"
+conda activate $CONDA_NAME
+cd ~/adna/tools
+DORADO_VER="0.9.1"
+wget https://cdn.oxfordnanoportal.com/software/analysis/dorado-${DORADO_VER}-linux-x64.tar.gz
+tar xzfv dorado-${DORADO_VER}-linux-x64.tar.gz
+ln -sf ~/aDNA/tools/dorado-${DORADO_VER}-linux-x64/bin/dorado $CONDA_PREFIX/bin/
+
+# link ONT raw reads
+cd /scratch/project/adna/Oyster_QX_Disease/Nanopore_sequencing/SRO_781
+mkdir -p pod5
+find /scratch/project/adna/Oyster_QX_Disease/Nanopore_sequencing -name "*.pod5" -exec ln -s {} pod5/ \;
+NCPUS=16
+MEM=32
+WALLTIME="5:00:00"
+JOB_NAME="SRO-ont-split-pod5"
+
+echo "pod5 view pod5 --include \"read_id, channel\" --output pod5_summary.tsv; pod5 subset pod5 --summary pod5_summary.tsv --columns channel --output pod5_split_by_channel" > $JOB_NAME.cmds
+# submit the job to the cluster
+sbatch --job-name=$JOB_NAME --cpus-per-task=$NCPUS --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOB_NAME.cmds,CONDA_NAME=$CONDA_NAME ~/bin/serial_jobs_run.slurm 
+# Duplex basecalling
+MINQ=7
+MODEL="sup"
+
+JOB_NAME="SRO-ont-duplex-basecall"
+find pod5_split_by_channel -name "*.pod5" | parallel --dry-run "dorado duplex --reference $WORK_DIR/Sro_reference_concatenated.fasta -x cuda:0 --min-qscore $MINQ $MODEL pod5/ --emit-fastq > ${BATCH}_SRO-mapped_reads_Q${MINQ}.bam; dorado summary -v ${BATCH}_SRO-mapped_reads_Q${MINQ}.bam > ${BATCH}_sequencing_summary.txt ; samtools view -Ofastq -f 4 ${BATCH}_SRO-mapped_reads_Q${MINQ}.bam | pbgzip -c -8 > ${BATCH}_unmapped_reads.fastq.gz; seqkit grep -nri -p  ';' ${BATCH}_unmapped_reads.fastq.gz -o ${BATCH}_duplex_unmapped_reads_Q7.fastq.gz; seqkit grep -nriv -p  ';' ${BATCH}_unmapped_reads.fastq.gz -o ${BATCH}_simplex_unmapped_reads_Q7.fastq.gz" | qsub -l select=1:ncpus=8:ngpus=1:mem=128gb,walltime=20:00:00 -N Niki_QX_1 -q gpuq2 
+
+
+dorado basecaller hac <reads> ... | dorado trim --sequencing-kit <kit> > trimmed.bam
+# Error correction
+# Determine the number of input target blocks.
+num_blocks=$(dorado correct in.fastq --compute-num-blocks)
+
+# For every block, run correction of those target reads.
+for ((i=0; i<${num_blocks}; i++)); do
+    qsub <options> dorado correct in.fastq --run-block-id ${i} > out.block_${i}.fasta
+done
+
+```
+
+```{bash gap-fill}
+CONDA_NAME="gap-fill" 
+mamba create -n $CONDA_NAME masurca fgap canu # dentist-core snakemake ragtag
+
+# download ONT data
+cd /scratch/project/adna/Oyster_QX_Disease/
+
+
+WORKDIR="/scratch/project/adna/Oyster_QX_Disease/stLFR_Murdoch/SRO-stLFRdenovo"
+NCPUS=16
+MEM=128
+WALLTIME="20:00:00"
+JOB_NAME="SRO-ont"
+mkdir -p $WORKDIR/$JOB_NAME/ONT_data && cd $WORKDIR/$JOB_NAME
+
+
+echo "samba.sh -r $WORKDIR/output/scaffolds.fasta.gz -q <long reads or another assembly used to scaffold in fasta or fastq format, can be gzipped> -d ont -m 2500 -t $NCPUS" > $JOB_NAME.cmds
+# submit the job to the cluster
+sbatch --job-name=$JOB_NAME --cpus-per-task=$NCPUS --mem=${MEM}G --time=$WALLTIME --export=ALL,CMDS_FILE=$JOB_NAME.cmds,CONDA_NAME=$CONDA_NAME ~/bin/serial_jobs_run.slurm
+
+```
+
+
+
 #### Assembly with STLFRassembly
-Another approach that may be more suitable for our scenario is implemented in pipelines that attempt to assemble metagenomes from the stLFR reads. 
+Another approach that may be more suitable for our scenario is implemented in pipelines that attempt to assemble metagenomes from the stLFR or Nanopore reads. 
 
 * The [MetaSTHD Assembly Pipeline](https://github.com/sumoii/STLFRassembly) uses several tools, such as [MetaWRAP](https://github.com/bxlab/metaWRAP) [@uritskiyMetaWRAPFlexiblePipeline2018], [WENGAN](https://github.com/adigenova/wengan) [@digenovaEfficientHybridNovo2021] and [cloudSPAdes](https://github.com/ablab/spades/tree/cloudspades-paper)[@tolstoganovCloudSPAdesAssemblySynthetic2019] to perform this task.
 * [LRTK](https://github.com/ericcombiolab/LRTK) is a similar pipeline that seems much more complete and mature [@yangLRTKPlatformAgnostic2022].
 * [Athena_meta](https://github.com/abishara/athena_meta) is a linked-reads metagenomes assembly tool. It can be installed via `conda` or as a Docker container `abishara/athena-meta-flye-docker` [@bisharaHighqualityGenomeSequences2018].  
 * [MetaTrass](https://github.com/BGI-Qingdao/MetaTrass) is a linked-reads metagenomes assembly tool for the human gut microbiome [@qiMetaTrassHighqualityMetagenome2022] 
+* Hifiasm is an assembler designed for PacBio HiFi data, but the recent version can use ONT data as input. It can be used in conjuction with [HiFiasm-meta](https://github.com/xfengnefx/hifiasm-meta) to try and assemble the metagenome (see details [here](https://github.com/xfengnefx/hifiasm-meta/issues/38#issuecomment-2611655948)) and then use the stLFR data to polish it.
 
 ```{bash stlr-LRTK}
 CONDA_NAME=lrtk
@@ -1192,9 +1303,9 @@ sbatch SRO_stlfr_meta.slurm
 All the generated data was copied to a cloud-based storage (Griffith Research Space and SharePoint)
 
 ```{bash backup}
-rclone copy -P -L --exclude "**work/*" --exclude "**nextflow/*" --exclude "**.nextflow*" --exclude "**/*.html" Oyster_QX_Disease Niki_QX:General/Niki_Nenadic/Niki_PhD/SRO_QX_genomic_data
+rclone copy -P -L --exclude "**work/*" --exclude "**nextflow/*" --exclude "**.nextflow*" --exclude "**/*.html" --exclude "**/*.xlsx" Oyster_QX_Disease Niki_QX:General/Niki_Nenadic/Niki_PhD/SRO_QX_genomic_data
 
-rclone copy -P -L --ignore-checksum --ignore-size --include "**/*.html" Oyster_QX_Disease Niki_QX:General/Niki_Nenadic/Niki_PhD/SRO_QX_genomic_data
+rclone copy -P -L --ignore-checksum --ignore-size --include "**/*.html" --include "**/*.xlsx" Oyster_QX_Disease Niki_QX:General/Niki_Nenadic/Niki_PhD/SRO_QX_genomic_data
 ```
 
 ## General information
